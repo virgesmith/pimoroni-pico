@@ -17,3 +17,6 @@
 [submodule "micropython/modules/qrcode"]
 	path = micropython/modules/qrcode
 	url = https://github.com/pimoroni/QR-Code-Generator
+[submodule "drivers/mlx90640/src"]
+	path = drivers/mlx90640/src
+	url = https://github.com/melexis/mlx90640-library

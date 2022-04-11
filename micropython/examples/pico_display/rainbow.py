@@ -48,6 +48,9 @@ while True:
     display.set_pen(r, g, b)  # Set pen to a converted HSV value
     display.clear()           # Fill the screen with the colour
     display.set_pen(0, 0, 0)  # Set pen to black
-    display.text("pico disco!", 10, 10, 240, 6)  # Add some text
+    display.text("Pico Disco!", 4, 10, 316, 1)  # Add some text
+    display.text("Pico Disco!", 4, 20, 316, 2)  # Add some text
+    display.text("Pico Disco!", 4, 40, 316, 4)  # Add some text
+    display.text("Pico Disco!", 4, 80, 316, 8)  # Add some text
     display.update()          # Update the display
     utime.sleep(1.0 / 60)

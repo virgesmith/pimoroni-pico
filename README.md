@@ -30,6 +30,8 @@ New releases are issued regularly with new libraries, bug fixes to our existing 
 * [Readme: Instructions for setting up MicroPython](setting-up-micropython.md)
 * [Pimoroni Pico MicroPython + Drivers Releases](https://github.com/pimoroni/pimoroni-pico/releases)
 
+See [here](micropython-build.md) for instructions on building a custom micropython image including the pimoroni modules.
+
 ## MicroPython Examples
 
 You can find MicroPython examples for supported sensors, packs and bases in the "micropython/examples" directory:
@@ -92,8 +94,8 @@ We also maintain a C++/CMake boilerplate with GitHub workflows configured for te
 * ST7735 - 0.96" LCD - https://shop.pimoroni.com/products/0-96-spi-colour-lcd-160x80-breakout
 * IS31FL3730 - dual LTP-305 LED matrices - https://shop.pimoroni.com/products/led-dot-matrix-breakout
 * LTR559 - Proximity/Presence/Light Sensor - https://shop.pimoroni.com/products/ltr-559-light-proximity-sensor-breakout
-* IS31FL3731 - 11x7 and 5x5 matrix displays 
-  - https://shop.pimoroni.com/products/11x7-led-matrix-breakout 
+* IS31FL3731 - 11x7 and 5x5 matrix displays
+  - https://shop.pimoroni.com/products/11x7-led-matrix-breakout
   - https://shop.pimoroni.com/products/5x5-rgb-matrix-breakout
 * Trackball - https://shop.pimoroni.com/products/trackball-breakout
 * SGP30 - Air Quality Sensor - https://shop.pimoroni.com/products/sgp30-air-quality-sensor-breakout

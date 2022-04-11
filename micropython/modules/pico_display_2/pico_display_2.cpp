@@ -2,6 +2,8 @@
 #include "hardware/sync.h"
 #include "pico/binary_info.h"
 
+#include "libraries/bitmap_fonts/font8_data.hpp"
+
 #include "libraries/pico_display_2/pico_display_2.hpp"
 
 using namespace pimoroni;
@@ -22,13 +24,12 @@ mp_obj_t picodisplay2_init(mp_obj_t buf_obj) {
     picodisplay2_buf_obj = buf_obj;
 
     // If a display already exists, delete it
-    if(display2 != nullptr) {
-        delete display2;
-    }
+    delete display2;
 
     // Create a new display pointing to the newly provided buffer
     display2 = new PicoDisplay2((uint16_t *)bufinfo.buf);
     display2->init();
+    display2->set_font(&font8);
 
     return mp_const_none;
 }
@@ -146,12 +147,12 @@ mp_obj_t picodisplay2_set_pen(mp_uint_t n_args, const mp_obj_t *args) {
 
 mp_obj_t picodisplay2_create_pen(mp_obj_t r_obj, mp_obj_t g_obj, mp_obj_t b_obj) {
     int pen = 0;
-    
+
     if(display2 != nullptr) {
         int r = mp_obj_get_int(r_obj);
         int g = mp_obj_get_int(g_obj);
         int b = mp_obj_get_int(b_obj);
-        
+
         if(r < 0 || r > 255)
             mp_raise_ValueError("r out of range. Expected 0 to 255");
         else if(g < 0 || g > 255)

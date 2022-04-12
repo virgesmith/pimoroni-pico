@@ -23,16 +23,16 @@ make
 cd ..
 ```
 
-## build micropython for the target
+## build custom micropython for the target
 
-This step uses `PICO` (the standard pico 2040 board), other options are (replace as necessary):
+`USER_C_MODULES` points to the custom modules in pimoroni-pico. Code below uses `PICO` (the standard pico 2040 board), other options are (replace as necessary):
 - `PIMORONI_TINY2040`
 - `PIMORONI_PICOLIPO_4MB`
 - `PIMORONI_PICOLIPO_16MB`
 
 ```sh
 cd ports/rp2/
-cmake -S . -B build-PICO -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=../../../rpi-pico/pimoroni-pico/micropython/modules/micropython.cmake -DMICROPY_BOARD=PICO
+cmake -S . -B build-PICO -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=../../../pimoroni-pico/micropython/modules/micropython.cmake -DMICROPY_BOARD=PICO
 cmake --build build-PICO -j
 ```
 

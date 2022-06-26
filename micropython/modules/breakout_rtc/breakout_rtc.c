@@ -138,8 +138,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutRTC_locals_dict, BreakoutRTC_locals_dict_tab
 /***** Class Definition *****/
 const mp_obj_type_t breakout_rtc_BreakoutRTC_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_rtc,
-    .print = BreakoutRTC_print,
+    .name = MP_QSTR_BreakoutRTC,
     .make_new = BreakoutRTC_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutRTC_locals_dict,
 };
@@ -162,6 +161,10 @@ const mp_obj_module_t breakout_rtc_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_rtc, breakout_rtc_user_cmodule, MODULE_BREAKOUT_RTC_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_rtc, breakout_rtc_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -47,8 +47,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutLTR559_locals_dict, BreakoutLTR559_locals_di
 /***** Class Definition *****/
 const mp_obj_type_t breakout_ltr559_BreakoutLTR559_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_ltr559,
-    .print = BreakoutLTR559_print,
+    .name = MP_QSTR_BreakoutLTR559,
     .make_new = BreakoutLTR559_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutLTR559_locals_dict,
 };
@@ -72,6 +71,10 @@ const mp_obj_module_t breakout_ltr559_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_ltr559, breakout_ltr559_user_cmodule, MODULE_BREAKOUT_LTR559_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_ltr559, breakout_ltr559_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

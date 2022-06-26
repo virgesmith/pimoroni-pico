@@ -50,8 +50,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutMICS6814_locals_dict, BreakoutMICS6814_local
 /***** Class Definition *****/
 const mp_obj_type_t breakout_mics6814_BreakoutMICS6814_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_mics6814,
-    .print = BreakoutMICS6814_print,
+    .name = MP_QSTR_BreakoutMICS6814,
     .make_new = BreakoutMICS6814_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutMICS6814_locals_dict,
 };
@@ -75,6 +74,10 @@ const mp_obj_module_t breakout_mics6814_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_mics6814, breakout_mics6814_user_cmodule, MODULE_BREAKOUT_MICS6814_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_mics6814, breakout_mics6814_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

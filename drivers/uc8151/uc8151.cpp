@@ -49,6 +49,7 @@ namespace pimoroni {
   };
 
   bool UC8151::is_busy() {
+    if(BUSY == PIN_UNUSED) return false;
     return !gpio_get(BUSY);
   }
 
@@ -59,6 +60,7 @@ namespace pimoroni {
   }
 
   void UC8151::reset() {
+    if(RESET == PIN_UNUSED) return;
     gpio_put(RESET, 0); sleep_ms(10);
     gpio_put(RESET, 1); sleep_ms(10);
     busy_wait();
@@ -323,17 +325,16 @@ namespace pimoroni {
   void UC8151::setup(uint8_t speed) {
     reset();
 
-    _update_speed = speed;
+    update_speed = speed;
 
-    if(speed == 0) {
-      command(PSR, {
-        RES_128x296 | LUT_OTP | FORMAT_BW | SHIFT_RIGHT | BOOSTER_ON | RESET_NONE
-      });
-    } else {
-      command(PSR, {
-        RES_128x296 | LUT_REG | FORMAT_BW | SHIFT_RIGHT | BOOSTER_ON | RESET_NONE
-      });
-    }
+    uint8_t psr_setting = RES_128x296 | FORMAT_BW | BOOSTER_ON | RESET_NONE;
+
+    psr_setting |= speed == 0 ? LUT_OTP : LUT_REG;
+
+    psr_setting |= rotation == ROTATE_180 ? SHIFT_LEFT | SCAN_UP : SHIFT_RIGHT | SCAN_DOWN;
+
+    command(PSR, 1, &psr_setting);
+  
     switch(speed) {
       case 0:
         // Note: the defult luts are built in so we don't really need to flash them here
@@ -379,7 +380,7 @@ namespace pimoroni {
     });
 
     command(TCON, {0x22}); // tcon setting
-    command(CDI, {(uint8_t)(inverted ? 0b01'01'1100 : 0b01'00'1100)}); // vcom and data interval
+    command(CDI, {(uint8_t)(inverted ? 0b10'01'1100 : 0b01'00'1100)}); // vcom and data interval
 
     command(PLL, {
       HZ_100
@@ -446,40 +447,16 @@ namespace pimoroni {
     command(reg, values.size(), (uint8_t *)values.begin());
   }
 
-  void UC8151::pixel(int x, int y, int v) {
-    // bounds check
-    if(x < 0 || y < 0 || x >= width || y >= height) return;
-
-    // pointer to byte in framebuffer that contains this pixel
-    uint8_t *p = &frame_buffer[(y / 8) + (x * (height / 8))];
-
-    uint8_t  o = 7 - (y & 0b111);       // bit offset within byte
-    uint8_t  m = ~(1 << o);             // bit mask for byte
-    uint8_t  b = (v == 0 ? 0 : 1) << o; // bit value shifted to position
-
-    *p &= m; // clear bit
-    *p |= b; // set bit value
-  }
-
-  uint8_t* UC8151::get_frame_buffer() {
-	  return frame_buffer;
-  }
-
-  void UC8151::invert(bool inv) {
-    inverted = inv;
-    command(CDI, {(uint8_t)(inverted ? 0b01'01'1100 : 0b01'00'1100)}); // vcom and data interval
-  }
-
-  void UC8151::update_speed(uint8_t speed) {
+  void UC8151::set_update_speed(uint8_t speed) {
     setup(speed);
   }
 
-  uint8_t UC8151::update_speed() {
-    return _update_speed;
+  uint8_t UC8151::get_update_speed() {
+    return update_speed;
   }
 
   uint32_t UC8151::update_time() {
-    switch(_update_speed) {
+    switch(update_speed) {
       case 0:
         return 4500;
       case 1:
@@ -493,28 +470,29 @@ namespace pimoroni {
     }
   }
 
-  void UC8151::partial_update(int x, int y, int w, int h, bool blocking) {
-    // y is given in columns ("banks"), which are groups of 8 horiontal pixels
-    // x is given in pixels
+  void UC8151::partial_update(PicoGraphics *graphics, Rect region) {
+    // region.y is given in columns ("banks"), which are groups of 8 horiontal pixels
+    // region.x is given in pixels
+
+    uint8_t *fb = (uint8_t *)graphics->frame_buffer;
+
     if(blocking) {
       busy_wait();
     }
 
-    int cols = h / 8;
-    int y1 = y / 8;
-    //int y2 = y1 + cols;
+    int cols = region.h / 8;
+    int y1 = region.y / 8;
 
-    int rows = w;
-    int x1 = x;
-    //int x2 = x + rows;
+    int rows = region.w;
+    int x1 = region.x;
 
     uint8_t partial_window[7] = {
-      (uint8_t)(y),
-      (uint8_t)(y + h - 1),
-      (uint8_t)(x >> 8),
-      (uint8_t)(x & 0xff),
-      (uint8_t)((x + w - 1) >> 8),
-      (uint8_t)((x + w - 1) & 0xff),
+      (uint8_t)(region.y),
+      (uint8_t)(region.y + region.h - 1),
+      (uint8_t)(region.x >> 8),
+      (uint8_t)(region.x & 0xff),
+      (uint8_t)((region.x + region.w - 1) >> 8),
+      (uint8_t)((region.x + region.w - 1) & 0xff),
       0b00000001  // PT_SCAN
     };
     command(PON); // turn on
@@ -526,7 +504,7 @@ namespace pimoroni {
     for (auto dx = 0; dx < rows; dx++) {
       int sx = dx + x1;
       int sy = y1;
-      data(cols, &frame_buffer[sy + (sx * (height / 8))]);
+      data(cols, &fb[sy + (sx * (height / 8))]);
     }
     command(DSP); // data stop
 
@@ -539,7 +517,9 @@ namespace pimoroni {
     }
   }
 
-  void UC8151::update(bool blocking) {
+  void UC8151::update(PicoGraphics *graphics) {
+    uint8_t *fb = (uint8_t *)graphics->frame_buffer;
+
     if(blocking) {
       busy_wait();
     }
@@ -548,7 +528,7 @@ namespace pimoroni {
 
     command(PTOU); // disable partial mode
 
-    command(DTM2, (width * height) / 8, frame_buffer); // transmit framebuffer
+    command(DTM2, (width * height) / 8, fb); // transmit framebuffer
     command(DSP); // data stop
 
     command(DRF); // start display refresh

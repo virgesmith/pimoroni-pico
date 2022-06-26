@@ -34,8 +34,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutPotentiometer_locals_dict, BreakoutPotentiom
 /***** Class Definition *****/
 const mp_obj_type_t breakout_potentiometer_BreakoutPotentiometer_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_potentiometer,
-    .print = BreakoutPotentiometer_print,
+    .name = MP_QSTR_BreakoutPotentiometer,
     .make_new = BreakoutPotentiometer_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutPotentiometer_locals_dict,
 };
@@ -59,6 +58,10 @@ const mp_obj_module_t breakout_potentiometer_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_potentiometer, breakout_potentiometer_user_cmodule, MODULE_BREAKOUT_POTENTIOMETER_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_potentiometer, breakout_potentiometer_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

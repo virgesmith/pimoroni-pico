@@ -22,8 +22,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutRGBMatrix5x5_locals_dict, BreakoutRGBMatrix5
 /***** Class Definition *****/
 const mp_obj_type_t breakout_rgbmatrix5x5_BreakoutRGBMatrix5x5_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_rgbmatrix5x5,
-    .print = BreakoutRGBMatrix5x5_print,
+    .name = MP_QSTR_BreakoutRGBMatrix5x5,
     .make_new = BreakoutRGBMatrix5x5_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutRGBMatrix5x5_locals_dict,
 };
@@ -47,6 +46,10 @@ const mp_obj_module_t breakout_rgbmatrix5x5_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_rgbmatrix5x5, breakout_rgbmatrix5x5_user_cmodule, MODULE_BREAKOUT_RGBMATRIX5X5_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_rgbmatrix5x5, breakout_rgbmatrix5x5_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

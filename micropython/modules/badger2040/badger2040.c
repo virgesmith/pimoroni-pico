@@ -77,8 +77,7 @@ STATIC MP_DEFINE_CONST_DICT(Badger2040_locals_dict, Badger2040_locals_dict_table
 /***** Class Definition *****/
 const mp_obj_type_t Badger2040_type = {
     { &mp_type_type },
-    .name = MP_QSTR_badger2040,
-    .print = Badger2040_print,
+    .name = MP_QSTR_Badger2040,
     .make_new = Badger2040_make_new,
     .locals_dict = (mp_obj_dict_t*)&Badger2040_locals_dict,
 };
@@ -138,4 +137,8 @@ const mp_obj_module_t badger2040_user_cmodule = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&mp_module_badger2040_globals,
 };
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_badger2040, badger2040_user_cmodule, MODULE_BADGER2040_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_badger2040, badger2040_user_cmodule);
+#endif

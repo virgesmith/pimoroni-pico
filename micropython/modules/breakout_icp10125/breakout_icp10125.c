@@ -24,8 +24,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutICP10125_locals_dict, BreakoutICP10125_local
 /***** Class Definition *****/
 const mp_obj_type_t breakout_icp10125_BreakoutICP10125_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_matrix11x7,
-    .print = BreakoutICP10125_print,
+    .name = MP_QSTR_BreakoutICP10125,
     .make_new = BreakoutICP10125_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutICP10125_locals_dict,
 };
@@ -49,6 +48,10 @@ const mp_obj_module_t breakout_icp10125_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_icp10125, breakout_icp10125_user_cmodule, MODULE_BREAKOUT_SGP30_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_icp10125, breakout_icp10125_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

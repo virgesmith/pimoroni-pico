@@ -16,7 +16,6 @@ STATIC MP_DEFINE_CONST_DICT(adcfft_locals_dict, adcfft_locals_dict_table);
 const mp_obj_type_t adcfft_type = {
     { &mp_type_type },
     .name = MP_QSTR_ADCFFT,
-    .print = adcfft_print,
     .make_new = adcfft_make_new,
     .locals_dict = (mp_obj_dict_t*)&adcfft_locals_dict,
 };
@@ -34,4 +33,8 @@ const mp_obj_module_t adcfft_user_cmodule = {
     .globals = (mp_obj_dict_t*)&mp_module_adcfft_globals,
 };
 
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_adcfft, adcfft_user_cmodule, MODULE_ADCFFT_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_adcfft, adcfft_user_cmodule);
+#endif

@@ -18,8 +18,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutBME280_locals_dict, BreakoutBME280_locals_di
 /***** Class Definition *****/
 const mp_obj_type_t breakout_bme280_BreakoutBME280_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_bme280,
-    .print = BreakoutBME280_print,
+    .name = MP_QSTR_BreakoutBME280,
     .make_new = BreakoutBME280_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutBME280_locals_dict,
 };
@@ -69,6 +68,10 @@ const mp_obj_module_t breakout_bme280_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_bme280, breakout_bme280_user_cmodule, MODULE_BREAKOUT_BME280_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_bme280, breakout_bme280_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

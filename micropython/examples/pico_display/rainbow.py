@@ -4,13 +4,11 @@ import utime
 import st7789
 from pimoroni import RGBLED
 
-# Set the display resolution
-# in most cases you can swap WIDTH weith HEIGHT for portrait mode
-WIDTH, HEIGHT = 240, 135    # Pico Display
-# WIDTH, HEIGHT = 320, 240  # Pico Display 2.0
-
-display = st7789.ST7789(WIDTH, HEIGHT, rotate180=False)
+display = st7789.ST7789(st7789.DISPLAY_PICO_DISPLAY, rotate=0)
 display.set_backlight(0.8)
+display.set_palette_mode(st7789.PALETTE_USER)
+
+WIDTH, HEIGHT = display.get_bounds()
 
 led = RGBLED(6, 7, 8)
 
@@ -41,16 +39,18 @@ def hsv_to_rgb(h, s, v):
 
 h = 0
 
+BLACK = display.create_pen(0, 0, 0)
+RAINBOW = BLACK + 1  # Put RAINBOW right after BLACK in the palette
+
+
 while True:
     h += 1
     r, g, b = [int(255 * c) for c in hsv_to_rgb(h / 360.0, 1.0, 1.0)]  # rainbow magic
     led.set_rgb(r, g, b)      # Set LED to a converted HSV value
-    display.set_pen(r, g, b)  # Set pen to a converted HSV value
+    display.set_palette(RAINBOW, st7789.RGB565(r, g, b))  # Create pen with converted HSV value
+    display.set_pen(RAINBOW)  # Set pen
     display.clear()           # Fill the screen with the colour
-    display.set_pen(0, 0, 0)  # Set pen to black
-    display.text("Pico Disco!", 4, 10, 316, 1)  # Add some text
-    display.text("Pico Disco!", 4, 20, 316, 2)  # Add some text
-    display.text("Pico Disco!", 4, 40, 316, 4)  # Add some text
-    display.text("Pico Disco!", 4, 80, 316, 8)  # Add some text
+    display.set_pen(BLACK)    # Set pen to black
+    display.text("Pico Disco!", 10, 10, 240, 6)  # Add some text
     display.update()          # Update the display
     utime.sleep(1.0 / 60)

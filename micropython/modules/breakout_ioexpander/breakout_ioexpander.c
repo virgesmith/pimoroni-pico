@@ -65,8 +65,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutIOExpander_locals_dict, BreakoutIOExpander_l
 /***** Class Definition *****/
 const mp_obj_type_t breakout_ioexpander_BreakoutIOExpander_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_ioexpander,
-    .print = BreakoutIOExpander_print,
+    .name = MP_QSTR_BreakoutIOExpander,
     .make_new = BreakoutIOExpander_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutIOExpander_locals_dict,
 };
@@ -90,6 +89,10 @@ const mp_obj_module_t breakout_ioexpander_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_ioexpander, breakout_ioexpander_user_cmodule, MODULE_BREAKOUT_IOEXPANDER_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_ioexpander, breakout_ioexpander_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

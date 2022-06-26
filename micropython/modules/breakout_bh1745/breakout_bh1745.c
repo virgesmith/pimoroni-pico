@@ -30,8 +30,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutBH1745_locals_dict, BreakoutBH1745_locals_di
 /***** Class Definition *****/
 const mp_obj_type_t breakout_bh1745_BreakoutBH1745_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_bh1745,
-    .print = BreakoutBH1745_print,
+    .name = MP_QSTR_BreakoutBH1745,
     .make_new = BreakoutBH1745_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutBH1745_locals_dict,
 };
@@ -58,6 +57,10 @@ const mp_obj_module_t breakout_bh1745_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_bh1745, breakout_bh1745_user_cmodule, MODULE_BREAKOUT_LTR559_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_bh1745, breakout_bh1745_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

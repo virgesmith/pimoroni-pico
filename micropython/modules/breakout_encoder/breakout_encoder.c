@@ -36,8 +36,7 @@ STATIC MP_DEFINE_CONST_DICT(BreakoutEncoder_locals_dict, BreakoutEncoder_locals_
 /***** Class Definition *****/
 const mp_obj_type_t breakout_encoder_BreakoutEncoder_type = {
     { &mp_type_type },
-    .name = MP_QSTR_breakout_encoder,
-    .print = BreakoutEncoder_print,
+    .name = MP_QSTR_BreakoutEncoder,
     .make_new = BreakoutEncoder_make_new,
     .locals_dict = (mp_obj_dict_t*)&BreakoutEncoder_locals_dict,
 };
@@ -61,6 +60,10 @@ const mp_obj_module_t breakout_encoder_user_cmodule = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+#if MICROPY_VERSION <= 70144
 MP_REGISTER_MODULE(MP_QSTR_breakout_encoder, breakout_encoder_user_cmodule, MODULE_BREAKOUT_ENCODER_ENABLED);
+#else
+MP_REGISTER_MODULE(MP_QSTR_breakout_encoder, breakout_encoder_user_cmodule);
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

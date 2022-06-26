@@ -32,8 +32,9 @@ cd ..
 
 ```sh
 cd ports/rp2/
-cmake -S . -B build-PICO -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=../../../pimoroni-pico/micropython/modules/micropython.cmake -DMICROPY_BOARD=PICO
+cmake -S . -B build-PICO -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=../../../pimoroni-pico/micropython/modules/micropython-pico.cmake -DMICROPY_BOARD=PICO -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 cmake --build build-PICO -j
 ```
+(`ccache` can be installed from e.g. apt)
 
 *Et voila!* image is at `ports/rp2/build-PICO/firmware.uf2`.

@@ -17,11 +17,18 @@ enum PicoGraphicsDisplay {
 
 enum PicoGraphicsPenType {
     PEN_1BIT = 0,
+    PEN_3BIT,
     PEN_P2,
     PEN_P4,
     PEN_P8,
     PEN_RGB332,
     PEN_RGB565
+};
+
+enum PicoGraphicsBusType {
+    BUS_I2C,
+    BUS_SPI,
+    BUS_PARALLEL
 };
 
 // Type
@@ -38,7 +45,9 @@ extern mp_obj_t ModPicoGraphics_get_required_buffer_size(mp_obj_t display_in, mp
 extern mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 
 extern mp_obj_t ModPicoGraphics_update(mp_obj_t self_in);
+extern mp_obj_t ModPicoGraphics_partial_update(size_t n_args, const mp_obj_t *args);
 extern mp_obj_t ModPicoGraphics_set_backlight(mp_obj_t self_in, mp_obj_t brightness);
+extern mp_obj_t ModPicoGraphics_set_update_speed(mp_obj_t self_in, mp_obj_t update_speed);
 
 // Palette management
 extern mp_obj_t ModPicoGraphics_update_pen(size_t n_args, const mp_obj_t *args);

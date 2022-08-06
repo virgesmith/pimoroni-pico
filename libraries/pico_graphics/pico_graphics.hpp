@@ -24,6 +24,7 @@
 namespace pimoroni {
   typedef uint8_t RGB332;
   typedef uint16_t RGB565;
+  typedef uint32_t RGB888;
   struct RGB {
     int16_t r, g, b;
 
@@ -36,10 +37,11 @@ namespace pimoroni {
       r((__builtin_bswap16(c) & 0b1111100000000000) >> 8),
       g((__builtin_bswap16(c) & 0b0000011111100000) >> 3),
       b((__builtin_bswap16(c) & 0b0000000000011111) << 3) {}
-    constexpr RGB(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b) {}
+    constexpr RGB(int16_t r, int16_t g, int16_t b) : r(r), g(g), b(b) {}
 
     constexpr RGB  operator+ (const RGB& c) const {return RGB(r + c.r, g + c.g, b + c.b);}
     constexpr RGB& operator+=(const RGB& c) {r += c.r; g += c.g; b += c.b; return *this;}
+    constexpr RGB& operator-=(const RGB& c) {r -= c.r; g -= c.g; b -= c.b; return *this;}
     constexpr RGB  operator- (const RGB& c) const {return RGB(r - c.r, g - c.g, b - c.b);}
 
     // a rough approximation of how bright a colour is used to compare the
@@ -81,6 +83,10 @@ namespace pimoroni {
 
     constexpr RGB565 to_rgb332() {
       return (r & 0b11100000) | ((g & 0b11100000) >> 3) | ((b & 0b11000000) >> 6);
+    }
+
+    constexpr RGB888 to_rgb888() {
+      return (r << 16) | (g << 8) | (b << 0);
     }
   };
 
@@ -144,15 +150,19 @@ namespace pimoroni {
     0x00e4, 0x08e4, 0x10e4, 0x18e4, 0x00e5, 0x08e5, 0x10e5, 0x18e5, 0x00e6, 0x08e6, 0x10e6, 0x18e6, 0x00e7, 0x08e7, 0x10e7, 0x18e7,
   };
 
+  extern const uint8_t dither16_pattern[16];
+
   class PicoGraphics {
   public:
     enum PenType {
       PEN_1BIT,
+      PEN_3BIT,
       PEN_P2,
       PEN_P4,
       PEN_P8,
       PEN_RGB332,
-      PEN_RGB565
+      PEN_RGB565,
+      PEN_RGB888,
     };
 
     void *frame_buffer;
@@ -214,6 +224,7 @@ namespace pimoroni {
     virtual int reset_pen(uint8_t i);
     virtual void set_pixel_dither(const Point &p, const RGB &c);
     virtual void set_pixel_dither(const Point &p, const RGB565 &c);
+    virtual void set_pixel_dither(const Point &p, const uint8_t &c);
     virtual void scanline_convert(PenType type, conversion_callback_func callback);
     virtual void sprite(void* data, const Point &sprite, const Point &dest, const int scale, const int transparent);
 
@@ -275,15 +286,58 @@ namespace pimoroni {
       }
   };
 
+  class PicoGraphics_Pen3Bit : public PicoGraphics {
+    public:
+      static const uint16_t palette_size = 8;
+      uint8_t color;
+      RGB palette[8] = {
+        /*
+        {0x2b, 0x2a, 0x37},
+        {0xdc, 0xcb, 0xba},
+        {0x35, 0x56, 0x33},
+        {0x33, 0x31, 0x47},
+        {0x9c, 0x3b, 0x2e},
+        {0xd3, 0xa9, 0x34},
+        {0xab, 0x58, 0x37},
+        {0xb2, 0x8e, 0x67}
+        */
+        {  0,   0,   0}, // black
+        {255, 255, 255}, // white
+        {  0, 255,   0}, // green
+        {  0,   0, 255}, // blue
+        {255,   0,   0}, // red
+        {255, 255,   0}, // yellow
+        {255, 128,   0}, // orange
+        {220, 180, 200}  // clean / taupe?!
+      };
+
+      std::array<std::array<uint8_t, 16>, 512> candidate_cache;
+      bool cache_built = false;
+      std::array<uint8_t, 16> candidates;
+
+      PicoGraphics_Pen3Bit(uint16_t width, uint16_t height, void *frame_buffer);
+
+      void set_pen(uint c) override;
+      void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
+
+      void set_pixel(const Point &p) override;
+      void set_pixel_span(const Point &p, uint l) override;
+      void get_dither_candidates(const RGB &col, const RGB *palette, size_t len, std::array<uint8_t, 16> &candidates);
+      void set_pixel_dither(const Point &p, const RGB &c) override;
+
+      void scanline_convert(PenType type, conversion_callback_func callback) override;
+      static size_t buffer_size(uint w, uint h) {
+          return (w * h / 8) * 3;
+      }
+  };
+
   class PicoGraphics_PenP4 : public PicoGraphics {
     public:
-      static const uint palette_size = 16;
+      static const uint16_t palette_size = 16;
       uint8_t color;
       RGB palette[palette_size];
       bool used[palette_size];
-    
-      const uint pattern[16] = // dither pattern
-            {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+
       std::array<std::array<uint8_t, 16>, 512> candidate_cache;
       bool cache_built = false;
       std::array<uint8_t, 16> candidates;
@@ -308,13 +362,11 @@ namespace pimoroni {
 
   class PicoGraphics_PenP8 : public PicoGraphics {
     public:
-      static const uint palette_size = 256;
+      static const uint16_t palette_size = 256;
       uint8_t color;
       RGB palette[palette_size];
       bool used[palette_size];
     
-      const uint pattern[16] = // dither pattern
-            {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
       std::array<std::array<uint8_t, 16>, 512> candidate_cache;
       bool cache_built = false;
       std::array<uint8_t, 16> candidates;
@@ -373,6 +425,23 @@ namespace pimoroni {
       }
   };
 
+  
+  class PicoGraphics_PenRGB888 : public PicoGraphics {
+    public:
+      RGB src_color;
+      RGB888 color;
+      PicoGraphics_PenRGB888(uint16_t width, uint16_t height, void *frame_buffer);
+      void set_pen(uint c) override;
+      void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      void set_pixel(const Point &p) override;
+      void set_pixel_span(const Point &p, uint l) override;
+      static size_t buffer_size(uint w, uint h) {
+        return w * h * sizeof(uint32_t);
+      }
+  };
+
+
   class DisplayDriver {
     public:
       uint16_t width;
@@ -384,8 +453,10 @@ namespace pimoroni {
 
       virtual void update(PicoGraphics *display) {};
       virtual void partial_update(PicoGraphics *display, Rect region) {};
+      virtual bool set_update_speed(int update_speed) {return false;};
       virtual void set_backlight(uint8_t brightness) {};
       virtual bool is_busy() {return false;};
+      virtual void power_off() {};
       virtual void cleanup() {};
   };
 

@@ -38,10 +38,18 @@ namespace pimoroni {
   };
 
   bool UC8159::is_busy() {
+    if(BUSY == PIN_UNUSED) {
+      if(absolute_time_diff_us(get_absolute_time(), timeout) > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    }
     return !gpio_get(BUSY);
   }
 
-  void UC8159::busy_wait() {
+  void UC8159::busy_wait(uint minimum_wait_ms) {
+    timeout = make_timeout_time_ms(minimum_wait_ms);
     while(is_busy()) {
       tight_loop_contents();
     }
@@ -96,6 +104,10 @@ namespace pimoroni {
     command(0x50, {0x37});
   }
 
+  void UC8159::set_blocking(bool blocking) {
+    this->blocking = blocking;
+  }
+
   void UC8159::power_off() {
     busy_wait();
     command(POF); // turn off
@@ -126,32 +138,43 @@ namespace pimoroni {
     command(reg, values.size(), (uint8_t *)values.begin());
   }
 
-  void UC8159::update(const void *data, bool blocking) {
+  void UC8159::update(PicoGraphics *graphics) {
+    if(graphics->pen_type != PicoGraphics::PEN_3BIT) return; // Incompatible buffer
+
     if(blocking) {
       busy_wait();
     }
 
     setup();
 
-    command(DTM1, (width * height) / 2, (uint8_t *)data); // transmit framebuffer
+    gpio_put(CS, 0);
+
+    uint8_t reg = DTM1;
+    gpio_put(DC, 0); // command mode
+    spi_write_blocking(spi, &reg, 1);
+
+    gpio_put(DC, 1); // data mode
+    graphics->scanline_convert(PicoGraphics::PEN_P4, [this](void *buf, size_t length) {
+      spi_write_blocking(spi, (const uint8_t*)buf, length);
+    });
+
+    gpio_put(CS, 1);
+
     busy_wait();
 
     command(PON); // turn on
-    busy_wait();
+    busy_wait(200);
 
     command(DRF); // start display refresh
-    busy_wait();
+    busy_wait(200);
 
     if(blocking) {
-      busy_wait();
+      busy_wait(32 * 1000);
 
       command(POF); // turn off
+    } else {
+      timeout = make_timeout_time_ms(32 * 1000);
     }
-  }
-
-  void UC8159::update(PicoGraphics *graphics) {
-    if(graphics->pen_type != PicoGraphics::PEN_P4) return; // Incompatible buffer
-    update(graphics->frame_buffer, false);
   }
 
 }

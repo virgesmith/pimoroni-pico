@@ -2,11 +2,14 @@
 
 namespace pimoroni {
 
+  const uint8_t dither16_pattern[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+
   int PicoGraphics::update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) {return -1;};
   int PicoGraphics::reset_pen(uint8_t i) {return -1;};
   int PicoGraphics::create_pen(uint8_t r, uint8_t g, uint8_t b) {return -1;};
   void PicoGraphics::set_pixel_dither(const Point &p, const RGB &c) {};
   void PicoGraphics::set_pixel_dither(const Point &p, const RGB565 &c) {};
+  void PicoGraphics::set_pixel_dither(const Point &p, const uint8_t &c) {};
   void PicoGraphics::scanline_convert(PenType type, conversion_callback_func callback) {};
   void PicoGraphics::sprite(void* data, const Point &sprite, const Point &dest, const int scale, const int transparent) {};
 

@@ -14,7 +14,7 @@ Pico Graphics replaces the individual drivers for displays- if you're been using
 - [Function Reference](#function-reference)
   - [General](#general)
     - [Creating & Setting Pens](#creating--setting-pens)
-      - [RGB565, RGB332, P8 and P4 modes](#rgb565-rgb332-p8-and-p4-modes)
+      - [RGB888, RGB565, RGB332, P8 and P4 modes](#rgb888-rgb565-rgb332-p8-and-p4-modes)
       - [Monochrome Modes](#monochrome-modes)
       - [Inky Frame](#inky-frame)
     - [Controlling The Backlight](#controlling-the-backlight)
@@ -63,6 +63,8 @@ Bear in mind that MicroPython has only 192K of RAM available- a 320x240 pixel di
 * 128x128 I2C OLED - `DISPLAY_I2C_OLED_128X128`
 * Pico Inky Pack - 296x128 mono e-ink - `DISPLAY_INKY_PACK`
 * Inky Frame - 600x447 7-colour e-ink - `DISPLAY_INKY_FRAME`
+* Pico GFX Pack - 128x64 mono LCD Matrix - `DISPLAY_GFX_PACK`
+* Galactic Unicorn - 53x11 LED Matrix - `DISPLAY_GALACTIC_UNICORN`
 
 ### Supported Graphics Modes (Pen Type)
 
@@ -72,6 +74,7 @@ Bear in mind that MicroPython has only 192K of RAM available- a 320x240 pixel di
 * 8-bit - `PEN_P8` - 256-colour palette of your choice
 * 8-bit RGB332 - `PEN_RGB332` - 256 fixed colours (3 bits red, 3 bits green, 2 bits blue)
 * 16-bit RGB565 - `PEN_RGB565` - 64K colours at the cost of RAM. (5 bits red, 6 bits green, 5 bits blue)
+* 24-bit RGB888 - `PEN_RGB888` - 16M colours at the cost of lots of RAM. (8 bits red, 8 bits green, 8 bits blue)
 
 These offer a tradeoff between RAM usage and available colours. In most cases you would probably use `RGB332` since it offers the easiest tradeoff. It's also the default for colour LCDs.
 
@@ -135,7 +138,7 @@ display = PicoGraphics(display=DISPLAY_I2C_OLED_128X128, bus=i2cbus)
 
 #### Creating & Setting Pens
 
-##### RGB565, RGB332, P8 and P4 modes
+##### RGB888, RGB565, RGB332, P8 and P4 modes
 
 Create a pen colour for drawing into a screen:
 
@@ -153,7 +156,7 @@ To tell PicoGraphics which pen to use:
 display.set_pen(my_pen)
 ```
 
-This will be either an RGB332 or RGB565 colour, or a palette index.
+This will be either an RGB332, RGB565 or RGB888 colour, or a palette index.
 
 ##### Monochrome Modes
 
@@ -242,6 +245,12 @@ Send the contents of your Pico Graphics buffer to your screen:
 display.update()
 ```
 
+If you are using a Galactic Unicorn, then the process for updating the display is different. Instead of the above, do:
+
+```python
+galactic_unicorn.update(display)
+```
+
 ### Text
 
 #### Changing The Font
@@ -299,7 +308,7 @@ Draws "Hello World" in a 16px tall, 2x scaled version of the `bitmap8` font.
 Sometimes you might want to measure a text string for centering or alignment on screen, you can do this with:
 
 ```python
-width = measure_text(text, scale, spacing)
+width = display.measure_text(text, scale, spacing)
 ```
 
 The height of each Bitmap font is explicit in its name.

@@ -51,11 +51,13 @@ namespace pimoroni {
         return i;
     }
     void PicoGraphics_PenP4::set_pixel(const Point &p) {
+        auto i = (p.x + p.y * bounds.w);
+
         // pointer to byte in framebuffer that contains this pixel
         uint8_t *buf = (uint8_t *)frame_buffer;
-        uint8_t *f = &buf[(p.x / 2) + (p.y * bounds.w / 2)];
+        uint8_t *f = &buf[i / 2];
 
-        uint8_t  o = (~p.x & 0b1) * 4; // bit offset within byte
+        uint8_t  o = (~i & 0b1) * 4;   // bit offset within byte
         uint8_t  m = ~(0b1111 << o);   // bit mask for byte
         uint8_t  b = color << o;       // bit value shifted to position
 
@@ -64,15 +66,17 @@ namespace pimoroni {
     }
 
     void PicoGraphics_PenP4::set_pixel_span(const Point &p, uint l) {
+        auto i = (p.x + p.y * bounds.w);
+
         // pointer to byte in framebuffer that contains this pixel
         uint8_t *buf = (uint8_t *)frame_buffer;
-        uint8_t *f = &buf[(p.x / 2) + (p.y * bounds.w / 2)];
+        uint8_t *f = &buf[i / 2];
 
         // doubled up color value, so the color is stored in both nibbles
         uint8_t cc = color | (color << 4);
         
         // handle the first pixel if not byte aligned
-        if(p.x & 0b1) {*f &= 0b11110000; *f |= (cc & 0b00001111); f++; l--;}
+        if(i & 0b1) {*f &= 0b11110000; *f |= (cc & 0b00001111); f++; l--;}
 
         // write any double nibble pixels
         while(l > 1) {*f++ = cc; l -= 2;}
@@ -124,7 +128,7 @@ namespace pimoroni {
         color = candidate_cache[cache_key][dither16_pattern[pattern_index]];
         set_pixel(p);
     }
-    void PicoGraphics_PenP4::scanline_convert(PenType type, conversion_callback_func callback) {
+    void PicoGraphics_PenP4::frame_convert(PenType type, conversion_callback_func callback) {
         if(type == PEN_RGB565) {
             // Cache the RGB888 palette as RGB565
             RGB565 cache[palette_size];
@@ -134,27 +138,18 @@ namespace pimoroni {
 
             // Treat our void* frame_buffer as uint8_t
             uint8_t *src = (uint8_t *)frame_buffer;
+            uint8_t o = 4;
 
-            // Allocate a per-row temporary buffer
-            uint16_t row_buf[bounds.w];
-            for(auto y = 0; y < bounds.h; y++) {
-                /*if(scanline_interrupt != nullptr) {
-                    scanline_interrupt(y);
-                    // Cache the RGB888 palette as RGB565
-                    for(auto i = 0u; i < 16; i++) {
-                    cache[i] = palette[i].to_rgb565();
-                    }
-                }*/
+            frame_convert_rgb565(callback, [&]() {
+                uint8_t c = *src;
+                uint8_t b = (c >> o) & 0xf; // bit value shifted to position
+                
+                // Increment to next 4-bit entry 
+                o ^= 4;
+                if (o != 0) ++src;
 
-                for(auto x = 0; x < bounds.w; x++) {
-                    uint8_t c = src[(bounds.w * y / 2) + (x / 2)];
-                    uint8_t  o = (~x & 0b1) * 4; // bit offset within byte
-                    uint8_t  b = (c >> o) & 0xf; // bit value shifted to position
-                    row_buf[x] = cache[b];
-                }
-                // Callback to the driver with the row data
-                callback(row_buf, bounds.w * sizeof(RGB565));
-            }
+                return cache[b];
+            });
         }
     }
 }

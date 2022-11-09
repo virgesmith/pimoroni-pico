@@ -12,7 +12,10 @@ enum PicoGraphicsDisplay {
     DISPLAY_LCD_160X80,
     DISPLAY_I2C_OLED_128X128,
     DISPLAY_INKY_PACK,
-    DISPLAY_INKY_FRAME
+    DISPLAY_INKY_FRAME,
+    DISPLAY_INKY_FRAME_4,
+    DISPLAY_GALACTIC_UNICORN,
+    DISPLAY_GFX_PACK
 };
 
 enum PicoGraphicsPenType {
@@ -22,13 +25,15 @@ enum PicoGraphicsPenType {
     PEN_P4,
     PEN_P8,
     PEN_RGB332,
-    PEN_RGB565
+    PEN_RGB565,
+    PEN_RGB888
 };
 
 enum PicoGraphicsBusType {
     BUS_I2C,
     BUS_SPI,
-    BUS_PARALLEL
+    BUS_PARALLEL,
+    BUS_PIO
 };
 
 // Type

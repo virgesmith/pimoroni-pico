@@ -15,7 +15,8 @@ namespace hershey {
   };
 
   inline float deg2rad(float degrees) {
-    return (degrees * M_PI) / 180.0f;
+    constexpr const double FACTOR = 4.0 * atan(1.0) / 180.0;
+    return degrees * FACTOR;
   }
 
   const font_glyph_t* glyph_data(const font_t* font, unsigned char c) {

@@ -15,7 +15,7 @@ namespace hershey {
   };
 
   inline float deg2rad(float degrees) {
-    constexpr const double FACTOR = 4.0 * atan(1.0) / 180.0;
+    constexpr double FACTOR = 4.0 * atan(1.0) / 180.0;
     return degrees * FACTOR;
   }
 

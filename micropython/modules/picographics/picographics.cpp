@@ -4,6 +4,8 @@
 #include "drivers/uc8151/uc8151.hpp"
 #include "drivers/uc8159/uc8159.hpp"
 #include "drivers/st7567/st7567.hpp"
+#include "drivers/inky73/inky73.hpp"
+#include "drivers/psram_display/psram_display.hpp"
 #include "libraries/pico_graphics/pico_graphics.hpp"
 #include "common/pimoroni_common.hpp"
 #include "common/pimoroni_bus.hpp"
@@ -128,6 +130,86 @@ bool get_display_settings(PicoGraphicsDisplay display, int &width, int &height, 
             if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
             if(pen_type == -1) pen_type = PEN_1BIT;
             break;
+        case DISPLAY_INTERSTATE75_32X32:
+            width = 32;
+            height = 32;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_64X32:
+            width = 64;
+            height = 32;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_96X32:
+            width = 96;
+            height = 32;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_128X32:
+            width = 128;
+            height = 32;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_64X64:
+            width = 64;
+            height = 64;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_128X64:
+            width = 128;
+            height = 64;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_192X64:
+            width = 192;
+            height = 64;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INTERSTATE75_256X64:
+            width = 256;
+            height = 64;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_INKY_FRAME_7:
+            width = 800;
+            height = 480;
+            bus_type = BUS_SPI;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_INKY7;
+            break;
+        case DISPLAY_COSMIC_UNICORN:
+            width = 32;
+            height = 32;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
         default:
             return false;
     }
@@ -150,6 +232,8 @@ size_t get_required_buffer_size(PicoGraphicsPenType pen_type, uint width, uint h
             return PicoGraphics_PenRGB565::buffer_size(width, height);
         case PEN_RGB888:
             return PicoGraphics_PenRGB888::buffer_size(width, height);
+        case PEN_INKY7:
+            return PicoGraphics_PenInky7::buffer_size(width, height);
         default:
             return 0;
     }
@@ -201,7 +285,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
         _PimoroniBus_obj_t *bus = (_PimoroniBus_obj_t *)MP_OBJ_TO_PTR(args[ARG_bus].u_obj);
         parallel_bus = *(ParallelPins *)(bus->pins);
 
-    } else if (mp_obj_is_type(args[ARG_bus].u_obj, &PimoroniI2C_type) || MP_OBJ_IS_TYPE(args[ARG_bus].u_obj, &machine_hw_i2c_type)) {
+    } else if (mp_obj_is_type(args[ARG_bus].u_obj, &PimoroniI2C_type) || MP_OBJ_IS_TYPE(args[ARG_bus].u_obj, &machine_i2c_type)) {
         if(bus_type != BUS_I2C) mp_raise_ValueError("unexpected I2C bus!");
         self->i2c = PimoroniI2C_from_machine_i2c_or_native(args[ARG_bus].u_obj);
         i2c_bus = (pimoroni::I2C *)(self->i2c->i2c);
@@ -212,7 +296,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
             self->i2c = (_PimoroniI2C_obj_t *)MP_OBJ_TO_PTR(PimoroniI2C_make_new(&PimoroniI2C_type, 0, 0, nullptr));
             i2c_bus = (pimoroni::I2C *)(self->i2c->i2c);
         } else if (bus_type == BUS_SPI) {
-            if(display == DISPLAY_INKY_FRAME || display == DISPLAY_INKY_FRAME_4) {
+            if(display == DISPLAY_INKY_FRAME || display == DISPLAY_INKY_FRAME_4 || display == DISPLAY_INKY_FRAME_7) {
                 spi_bus = {PIMORONI_SPI_DEFAULT_INSTANCE, SPI_BG_FRONT_CS, SPI_DEFAULT_SCK, SPI_DEFAULT_MOSI, PIN_UNUSED, 28, PIN_UNUSED};
             } else if (display == DISPLAY_INKY_PACK) {
                 spi_bus = {PIMORONI_SPI_DEFAULT_INSTANCE, SPI_BG_FRONT_CS, SPI_DEFAULT_SCK, SPI_DEFAULT_MOSI, PIN_UNUSED, 20, PIN_UNUSED};
@@ -227,6 +311,11 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
         pen_type = PEN_3BIT; // FORCE to 3BIT
         // TODO grab BUSY and RESET from ARG_extra_pins
         self->display = m_new_class(UC8159, width, height, (Rotation)rotate, spi_bus);
+
+    } else if (display == DISPLAY_INKY_FRAME_7) {
+        pen_type = PEN_INKY7;
+        // TODO grab BUSY and RESET from ARG_extra_pins
+        self->display = m_new_class(Inky73, width, height, (Rotation)rotate, spi_bus);
 
     } else if (display == DISPLAY_TUFTY_2040) {
         self->display = m_new_class(ST7789, width, height, (Rotation)rotate, parallel_bus);
@@ -249,6 +338,12 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     } else if (display == DISPLAY_GFX_PACK) {
         self->display = m_new_class(ST7567, width, height, spi_bus);
 
+    } else if (display == DISPLAY_INTERSTATE75_32X32 || display == DISPLAY_INTERSTATE75_64X64 || display == DISPLAY_INTERSTATE75_64X32) {
+        self->display = m_new_class(DisplayDriver, width, height, (Rotation)rotate);
+    
+    } else if (display == DISPLAY_COSMIC_UNICORN) {
+        self->display = m_new_class(DisplayDriver, width, height, (Rotation)rotate);
+
     } else {
         self->display = m_new_class(ST7789, width, height, (Rotation)rotate, round, spi_bus);
     }
@@ -257,15 +352,19 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     size_t required_size = get_required_buffer_size((PicoGraphicsPenType)pen_type, width, height);
     if(required_size == 0) mp_raise_ValueError("Unsupported pen type!");
 
-    if (args[ARG_buffer].u_obj != mp_const_none) {
-        mp_buffer_info_t bufinfo;
-        mp_get_buffer_raise(args[ARG_buffer].u_obj, &bufinfo, MP_BUFFER_RW);
-        self->buffer = bufinfo.buf;
-        if(bufinfo.len < (size_t)(required_size)) {
-            mp_raise_ValueError("Supplied buffer is too small!");
-        }
+    if(pen_type == PEN_INKY7) {
+        self->buffer = m_new_class(PSRamDisplay, width, height);
     } else {
-        self->buffer = m_new(uint8_t, required_size);
+        if (args[ARG_buffer].u_obj != mp_const_none) {
+            mp_buffer_info_t bufinfo;
+            mp_get_buffer_raise(args[ARG_buffer].u_obj, &bufinfo, MP_BUFFER_RW);
+            self->buffer = bufinfo.buf;
+            if(bufinfo.len < (size_t)(required_size)) {
+                mp_raise_ValueError("Supplied buffer is too small!");
+            }
+        } else {
+            self->buffer = m_new(uint8_t, required_size);
+        }
     }
 
     // Create an instance of the graphics library
@@ -296,6 +395,9 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
         case PEN_RGB888:
             self->graphics = m_new_class(PicoGraphics_PenRGB888, self->display->width, self->display->height, self->buffer);
             break;
+        case PEN_INKY7:
+            self->graphics = m_new_class(PicoGraphics_PenInky7, self->display->width, self->display->height, *(IDirectDisplayDriver<uint8_t> *)self->buffer);
+            break;
         default:
             break;
     }
@@ -309,7 +411,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     self->graphics->clear();
 
     // Update the LCD from the graphics library
-    if (display != DISPLAY_INKY_FRAME && display != DISPLAY_INKY_FRAME_4 && display != DISPLAY_INKY_PACK) {
+    if (display != DISPLAY_INKY_FRAME && display != DISPLAY_INKY_FRAME_4 && display != DISPLAY_INKY_PACK && display != DISPLAY_INKY_FRAME_7) {
         self->display->update(self->graphics);
     }
 
@@ -401,6 +503,10 @@ mp_obj_t ModPicoGraphics_set_font(mp_obj_t self_in, mp_obj_t font) {
 mp_int_t ModPicoGraphics_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
     (void)flags;
+    if((PicoGraphicsPenType)self->graphics->pen_type == PEN_INKY7) {
+        // Special case for Inky Frame 7.3" which uses a PSRAM framebuffer not accessible as a raw buffer
+        mp_raise_ValueError("No local framebuffer.");
+    }
     bufinfo->buf = self->graphics->frame_buffer;
     bufinfo->len = get_required_buffer_size((PicoGraphicsPenType)self->graphics->pen_type, self->graphics->bounds.w, self->graphics->bounds.h);
     bufinfo->typecode = 'B';
@@ -409,6 +515,11 @@ mp_int_t ModPicoGraphics_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *buf
 
 mp_obj_t ModPicoGraphics_set_framebuffer(mp_obj_t self_in, mp_obj_t framebuffer) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    if((PicoGraphicsPenType)self->graphics->pen_type == PEN_INKY7) {
+        // Special case for Inky Frame 7.3" which uses a PSRAM framebuffer not accessible as a raw buffer
+        mp_raise_ValueError("No local framebuffer.");
+    }
 
     if (framebuffer == mp_const_none) {
         m_del(uint8_t, self->buffer, self->graphics->bounds.w * self->graphics->bounds.h);
@@ -627,6 +738,29 @@ mp_obj_t ModPicoGraphics_create_pen(size_t n_args, const mp_obj_t *args) {
     if (result == -1) mp_raise_ValueError("create_pen failed. No matching colour or space in palette!");
 
     return mp_obj_new_int(result);
+}
+
+mp_obj_t ModPicoGraphics_create_pen_hsv(size_t n_args, const mp_obj_t *args) {
+    enum { ARG_self, ARG_h, ARG_s, ARG_v };
+
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self], ModPicoGraphics_obj_t);
+    int result = self->graphics->create_pen_hsv(
+        mp_obj_get_float(args[ARG_h]),
+        mp_obj_get_float(args[ARG_s]),
+        mp_obj_get_float(args[ARG_v])
+    );
+
+    if (result == -1) mp_raise_ValueError("create_pen failed. No matching colour or space in palette!");
+
+    return mp_obj_new_int(result);
+}
+
+mp_obj_t ModPicoGraphics_set_thickness(mp_obj_t self_in, mp_obj_t pen) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->graphics->set_thickness(mp_obj_get_int(pen));
+
+    return mp_const_none;
 }
 
 mp_obj_t ModPicoGraphics_set_palette(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -905,16 +1039,27 @@ mp_obj_t ModPicoGraphics_triangle(size_t n_args, const mp_obj_t *args) {
 }
 
 mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args) {
-    enum { ARG_self, ARG_x1, ARG_y1, ARG_x2, ARG_y2 };
+    enum { ARG_self, ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_thickness };
 
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self], ModPicoGraphics_obj_t);
 
-    self->graphics->line(
-        {mp_obj_get_int(args[ARG_x1]),
-         mp_obj_get_int(args[ARG_y1])},
-        {mp_obj_get_int(args[ARG_x2]),
-         mp_obj_get_int(args[ARG_y2])}
-    );
+    if(n_args == 5) {
+        self->graphics->line(
+            {mp_obj_get_int(args[ARG_x1]),
+            mp_obj_get_int(args[ARG_y1])},
+            {mp_obj_get_int(args[ARG_x2]),
+            mp_obj_get_int(args[ARG_y2])}
+        );
+    }
+    else if(n_args == 6) {
+        self->graphics->thick_line(
+            {mp_obj_get_int(args[ARG_x1]),
+            mp_obj_get_int(args[ARG_y1])},
+            {mp_obj_get_int(args[ARG_x2]),
+            mp_obj_get_int(args[ARG_y2])},
+            mp_obj_get_int(args[ARG_thickness])
+        );
+    }
 
     return mp_const_none;
 }

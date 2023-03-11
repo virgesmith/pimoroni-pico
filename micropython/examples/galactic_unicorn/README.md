@@ -4,6 +4,7 @@
 - [Galactic Unicorn and PicoGraphics](#galactic-unicorn-and-picographics)
 - [Examples](#examples)
   - [Clock](#clock)
+  - [CO2](#co2)
   - [Eighties Super Computer](#eighties-super-computer)
   - [Feature Test](#feature-test)
   - [Feature Test With Audio](#feature-test-with-audio)
@@ -13,10 +14,12 @@
   - [Rainbow](#rainbow)
   - [Scrolling Text](#scrolling-text)
 - [Wireless Examples](#wireless-examples)
+  - [Cheerlights](#cheerlights)
   - [Cheerlights History](#cheerlights-history)
   - [Galactic Paint](#galactic-paint)
 - [Other Examples](#other-examples)
   - [Launch (Demo Reel)](#launch-demo-reel)
+- [Other Resources](#other-resources)
 
 ## About Galactic Unicorn
 
@@ -43,6 +46,12 @@ The easiest way to start displaying cool stuff on Galactic Unicorn is using our 
 [clock.py](clock.py)
 
 Clock example with (optional) NTP synchronization. You can adjust the brightness with LUX + and -, and resync the time by pressing A.
+
+### CO2
+
+[co2.py](co2.py)
+
+Add a [SCD41 sensor breakout](https://shop.pimoroni.com/products/scd41-co2-sensor-breakout) to make an unsubtle carbon dioxide detector. Press A to reset the high/low values.
 
 ### Eighties Super Computer
 
@@ -99,17 +108,20 @@ Display scrolling wisdom, quotes or greetz. You can adjust the brightness with L
 
 ## Wireless Examples
 
-These examples need `WIFI_CONFIG.py` (from the `common` directory) to be saved to your Pico W. Open up `WIFI_CONFIG.py` in Thonny to add your wifi details (and save it when you're done).
+These examples require `WIFI_CONFIG.py` and `network_manager.py` (from the `common` directory) to be saved to your Pico W. Open up `WIFI_CONFIG.py` in Thonny to add your wifi details (and save it when you're done).
 
 - [micropython/examples/common](../../examples/common)
+
+### Cheerlights
+[cheerlights.py](cheerlights.py)
+
+Displays the most recent #Cheerlights colour. Find out more about the Cheerlights API at https://cheerlights.com/
 
 ### Cheerlights History
 
 [cheerlights_history.py](cheerlights_history.py)
 
 Updates one pixel every five minutes to display the most recent #Cheerlights colour. Discover the most popular colours over time, or use it as an avant garde (but colourful) 53 hour clock! Find out more about the Cheerlights API at https://cheerlights.com/
-
-Requires `WIFI_CONFIG.py` and `network_manager.py` from the `common` directory.
 
 You can adjust the brightness with LUX + and -.
 
@@ -129,3 +141,13 @@ Requires `WIFI_CONFIG.py` from the `common` directory. It also needs the `microp
 
 If you want to get the demo reel that Galactic Unicorn ships with back, copy the contents of this `launch` folder to your Pico W.
 
+## Other Resources
+
+Here are some cool Galactic Unicorn community projects and resources that you might find useful / inspirational! Note that code at the links below has not been tested by us and we're not able to offer support with it.
+
+- :link: [Galactic Unicorn MQTT scroller (and 3D printed case)](https://github.com/ucl-casa-ce/Galactic-Unicorn-MQTT-Scroller)
+- :link: [Compiling custom pimoroni-pico MicroPython (with ulab)](https://medium.com/@iestynlloyd/galactic-unicorns-and-custom-pimoroni-pico-firmware-38dd7c5913b8)
+- :link: [Galactic Unicorn Graphical Workout](https://www.instructables.com/Galactic-Unicorn-Graphical-Workout/)
+- :link: [Galactic Unicorn Bounce - Simple GFX Demo](https://www.instructables.com/Galactic-Unicorn-Bounce-Simple-GFX-Demo/)
+- :link: [Cheerlights + Galactic Unicorn + MicroPython (beginner-friendly tutorial)](https://cheerlights.com/cheerlights-raspberry-pi-pico-w-micropython/)
+- :link: [CheerClock (plus laser-cut templates for a fancy case/diffuser)](https://github.com/seanosteen/CheerClock)

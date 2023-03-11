@@ -7,11 +7,15 @@ namespace pimoroni {
   int PicoGraphics::update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) {return -1;};
   int PicoGraphics::reset_pen(uint8_t i) {return -1;};
   int PicoGraphics::create_pen(uint8_t r, uint8_t g, uint8_t b) {return -1;};
+  int PicoGraphics::create_pen_hsv(float h, float s, float v){return -1;};
   void PicoGraphics::set_pixel_dither(const Point &p, const RGB &c) {};
   void PicoGraphics::set_pixel_dither(const Point &p, const RGB565 &c) {};
   void PicoGraphics::set_pixel_dither(const Point &p, const uint8_t &c) {};
   void PicoGraphics::frame_convert(PenType type, conversion_callback_func callback) {};
   void PicoGraphics::sprite(void* data, const Point &sprite, const Point &dest, const int scale, const int transparent) {};
+
+  int PicoGraphics::get_palette_size() {return 0;}
+  RGB* PicoGraphics::get_palette() {return nullptr;}
 
   void PicoGraphics::set_dimensions(int width, int height) {
     bounds = clip = {0, 0, width, height};
@@ -44,6 +48,10 @@ namespace pimoroni {
         set_font(hershey::fonts[name]);
       }
     }
+  }
+
+  void PicoGraphics::set_thickness(uint t) {
+    thickness = t;
   }
 
   void PicoGraphics::set_clip(const Rect &r) {
@@ -145,9 +153,15 @@ namespace pimoroni {
     }
 
     if (hershey_font) {
-      hershey::text(hershey_font, [this](int32_t x1, int32_t y1, int32_t x2, int32_t y2) {
-        line(Point(x1, y1), Point(x2, y2));
-      }, t, p.x, p.y, s, a);
+      if(thickness == 1) {
+        hershey::text(hershey_font, [this](int32_t x1, int32_t y1, int32_t x2, int32_t y2) {
+          line(Point(x1, y1), Point(x2, y2));
+        }, t, p.x, p.y, s, a);
+      } else {
+        hershey::text(hershey_font, [this](int32_t x1, int32_t y1, int32_t x2, int32_t y2) {
+          thick_line(Point(x1, y1), Point(x2, y2), thickness);
+        }, t, p.x, p.y, s, a);
+      }
       return;
     }
   }
@@ -273,6 +287,59 @@ namespace pimoroni {
     }
   }
 
+  void PicoGraphics::thick_line(Point p1, Point p2, uint thickness) {
+    int32_t ht = thickness / 2;
+    int32_t t = (int32_t)thickness;
+
+    // fast horizontal line
+    if(p1.y == p2.y) {
+      int32_t start = std::min(p1.x, p2.x);
+      int32_t end   = std::max(p1.x, p2.x);
+      rectangle(Rect(start, p1.y - ht, end - start, t));
+      return;
+    }
+
+    // fast vertical line
+    if(p1.x == p2.x) {
+      int32_t start  = std::min(p1.y, p2.y);
+      int32_t length = std::max(p1.y, p2.y) - start;
+      rectangle(Rect(p1.x - ht, start, t, length));
+      return;
+    }
+
+    // general purpose line
+    // lines are either "shallow" or "steep" based on whether the x delta
+    // is greater than the y delta
+    int32_t dx = p2.x - p1.x;
+    int32_t dy = p2.y - p1.y;
+    bool shallow = std::abs(dx) > std::abs(dy);
+    if(shallow) {
+      // shallow version
+      int32_t s = std::abs(dx);       // number of steps
+      int32_t sx = dx < 0 ? -1 : 1;   // x step value
+      int32_t sy = (dy << 16) / s;    // y step value in fixed 16:16
+      int32_t x = p1.x;
+      int32_t y = p1.y << 16;
+      while(s--) {
+        rectangle({x - ht, (y >> 16) - ht, t, t});
+        y += sy;
+        x += sx;
+      }
+    }else{
+      // steep version
+      int32_t s = std::abs(dy);       // number of steps
+      int32_t sy = dy < 0 ? -1 : 1;   // y step value
+      int32_t sx = (dx << 16) / s;    // x step value in fixed 16:16
+      int32_t y = p1.y;
+      int32_t x = p1.x << 16;
+      while(s--) {
+        rectangle({(x >> 16) - ht, y - ht, t, t});
+        y += sy;
+        x += sx;
+      }
+    }
+  }
+
   void PicoGraphics::line(Point p1, Point p2) {
     // fast horizontal line
     if(p1.y == p2.y) {
@@ -354,6 +421,36 @@ namespace pimoroni {
     // Transfer any remaining pixels ( < BUF_LEN )
     if(buf_entry > 0) {
         callback(row_buf[buf_idx], buf_entry * sizeof(RGB565));
+    }
+
+    // Callback with zero length to ensure previous buffer is fully written
+    callback(row_buf[buf_idx], 0);
+  }
+
+  // Common function for frame buffer conversion to 565 pixel format
+  void PicoGraphics::frame_convert_rgb888(conversion_callback_func callback, next_pixel_func_rgb888 get_next_pixel)
+  {
+    // Allocate two temporary buffers, as the callback may transfer by DMA
+    // while we're preparing the next part of the row
+    const int BUF_LEN = 64;
+    RGB888 row_buf[2][BUF_LEN];
+    int buf_idx = 0;
+    int buf_entry = 0;
+    for(auto i = 0; i < bounds.w * bounds.h; i++) {
+      row_buf[buf_idx][buf_entry] = get_next_pixel();
+      buf_entry++;
+
+      // Transfer a filled buffer and swap to the next one
+      if (buf_entry == BUF_LEN) {
+          callback(row_buf[buf_idx], BUF_LEN * sizeof(RGB888));
+          buf_idx ^= 1;
+          buf_entry = 0;
+      }
+    }
+
+    // Transfer any remaining pixels ( < BUF_LEN )
+    if(buf_entry > 0) {
+        callback(row_buf[buf_idx], buf_entry * sizeof(RGB888));
     }
 
     // Callback with zero length to ensure previous buffer is fully written

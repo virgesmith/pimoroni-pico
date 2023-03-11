@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <vector>
 #include <functional>
+#include <math.h>
 
 #include "libraries/hershey_fonts/hershey_fonts.hpp"
 #include "libraries/bitmap_fonts/bitmap_fonts.hpp"
@@ -25,6 +26,8 @@ namespace pimoroni {
   typedef uint8_t RGB332;
   typedef uint16_t RGB565;
   typedef uint32_t RGB888;
+
+
   struct RGB {
     int16_t r, g, b;
 
@@ -37,7 +40,30 @@ namespace pimoroni {
       r((__builtin_bswap16(c) & 0b1111100000000000) >> 8),
       g((__builtin_bswap16(c) & 0b0000011111100000) >> 3),
       b((__builtin_bswap16(c) & 0b0000000000011111) << 3) {}
+    constexpr RGB(uint c) :
+      r((c >> 16) & 0xff),
+      g((c >> 8) & 0xff),
+      b(c & 0xff) {}
     constexpr RGB(int16_t r, int16_t g, int16_t b) : r(r), g(g), b(b) {}
+  
+    static RGB from_hsv(float h, float s, float v) {
+      float i = floor(h * 6.0f);
+      float f = h * 6.0f - i;
+      v *= 255.0f;
+      uint8_t p = v * (1.0f - s);
+      uint8_t q = v * (1.0f - f * s);
+      uint8_t t = v * (1.0f - (1.0f - f) * s);
+
+      switch (int(i) % 6) {
+        case 0: return RGB(v, t, p);
+        case 1: return RGB(q, v, p);
+        case 2: return RGB(p, v, t);
+        case 3: return RGB(p, q, v);
+        case 4: return RGB(t, p, v);
+        case 5: return RGB(v, p, q);
+        default: return RGB(0, 0, 0);
+      }
+  }
 
     constexpr RGB  operator+ (const RGB& c) const {return RGB(r + c.r, g + c.g, b + c.b);}
     constexpr RGB& operator+=(const RGB& c) {r += c.r; g += c.g; b += c.b; return *this;}
@@ -89,6 +115,8 @@ namespace pimoroni {
       return (r << 16) | (g << 8) | (b << 0);
     }
   };
+
+
 
   typedef int Pen;
 
@@ -163,6 +191,7 @@ namespace pimoroni {
       PEN_RGB332,
       PEN_RGB565,
       PEN_RGB888,
+      PEN_INKY7
     };
 
     void *frame_buffer;
@@ -170,9 +199,11 @@ namespace pimoroni {
     PenType pen_type;
     Rect bounds;
     Rect clip;
+    uint thickness = 1;
 
     typedef std::function<void(void *data, size_t length)> conversion_callback_func;
     typedef std::function<RGB565()> next_pixel_func;
+    typedef std::function<RGB888()> next_pixel_func_rgb888;
     //typedef std::function<void(int y)> scanline_interrupt_func;
 
     //scanline_interrupt_func scanline_interrupt = nullptr;
@@ -183,6 +214,7 @@ namespace pimoroni {
     static constexpr RGB332 rgb_to_rgb332(uint8_t r, uint8_t g, uint8_t b) {
       return RGB(r, g, b).to_rgb332();
     }
+
 
     static constexpr RGB565 rgb332_to_rgb565(RGB332 c) {
       uint16_t p = ((c & 0b11100000) << 8) |
@@ -219,8 +251,13 @@ namespace pimoroni {
     virtual void set_pen(uint8_t r, uint8_t g, uint8_t b) = 0;
     virtual void set_pixel(const Point &p) = 0;
     virtual void set_pixel_span(const Point &p, uint l) = 0;
+    void set_thickness(uint t);
+
+    virtual int get_palette_size();
+    virtual RGB* get_palette();
 
     virtual int create_pen(uint8_t r, uint8_t g, uint8_t b);
+    virtual int create_pen_hsv(float h, float s, float v);
     virtual int update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b);
     virtual int reset_pen(uint8_t i);
     virtual void set_pixel_dither(const Point &p, const RGB &c);
@@ -253,9 +290,11 @@ namespace pimoroni {
     void polygon(const std::vector<Point> &points);
     void triangle(Point p1, Point p2, Point p3);
     void line(Point p1, Point p2);
+    void thick_line(Point p1, Point p2, uint thickness);
 
   protected:
     void frame_convert_rgb565(conversion_callback_func callback, next_pixel_func get_next_pixel);
+    void frame_convert_rgb888(conversion_callback_func callback, next_pixel_func_rgb888 get_next_pixel);
   };
 
   class PicoGraphics_Pen1Bit : public PicoGraphics {
@@ -293,7 +332,7 @@ namespace pimoroni {
   class PicoGraphics_Pen3Bit : public PicoGraphics {
     public:
       static const uint16_t palette_size = 8;
-      uint8_t color;
+      uint color;
       RGB palette[8] = {
         /*
         {0x2b, 0x2a, 0x37},
@@ -323,7 +362,13 @@ namespace pimoroni {
 
       void set_pen(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen_hsv(float h, float s, float v) override;
 
+      int get_palette_size() override {return palette_size;};
+      RGB* get_palette() override {return palette;};
+
+      void _set_pixel(const Point &p, uint col);
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
       void get_dither_candidates(const RGB &col, const RGB *palette, size_t len, std::array<uint8_t, 16> &candidates);
@@ -351,7 +396,11 @@ namespace pimoroni {
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen_hsv(float h, float s, float v) override;
       int reset_pen(uint8_t i) override;
+
+      int get_palette_size() override {return palette_size;};
+      RGB* get_palette() override {return palette;};
 
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
@@ -380,7 +429,11 @@ namespace pimoroni {
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen_hsv(float h, float s, float v) override;
       int reset_pen(uint8_t i) override;
+
+      int get_palette_size() override {return palette_size;};
+      RGB* get_palette() override {return palette;};
 
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
@@ -400,7 +453,7 @@ namespace pimoroni {
       void set_pen(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
-
+      int create_pen_hsv(float h, float s, float v) override;
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
       void set_pixel_dither(const Point &p, const RGB &c) override;
@@ -422,6 +475,7 @@ namespace pimoroni {
       void set_pen(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen_hsv(float h, float s, float v) override;
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
       static size_t buffer_size(uint w, uint h) {
@@ -429,7 +483,6 @@ namespace pimoroni {
       }
   };
 
-  
   class PicoGraphics_PenRGB888 : public PicoGraphics {
     public:
       RGB src_color;
@@ -438,6 +491,7 @@ namespace pimoroni {
       void set_pen(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen_hsv(float h, float s, float v) override;
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
       static size_t buffer_size(uint w, uint h) {
@@ -464,4 +518,64 @@ namespace pimoroni {
       virtual void cleanup() {};
   };
 
+  template<typename T> class IDirectDisplayDriver {
+     public:
+       virtual void write_pixel(const Point &p, T colour) = 0;
+       virtual void write_pixel_span(const Point &p, uint l, T colour) = 0;
+
+       virtual void read_pixel(const Point &p, T &data) {};
+       virtual void read_pixel_span(const Point &p, uint l, T *data) {};
+   };
+
+
+  class PicoGraphics_PenInky7 : public PicoGraphics {
+    public:
+      static const uint16_t palette_size = 7; // Taupe is unpredictable and greenish
+      RGB palette[8] = {
+        /*
+        {0x2b, 0x2a, 0x37},
+        {0xdc, 0xcb, 0xba},
+        {0x35, 0x56, 0x33},
+        {0x33, 0x31, 0x47},
+        {0x9c, 0x3b, 0x2e},
+        {0xd3, 0xa9, 0x34},
+        {0xab, 0x58, 0x37},
+        {0xb2, 0x8e, 0x67}
+        */
+        {  0,   0,   0}, // black
+        {255, 255, 255}, // white
+        {  0, 255,   0}, // green
+        {  0,   0, 255}, // blue
+        {255,   0,   0}, // red
+        {255, 255,   0}, // yellow
+        {255, 128,   0}, // orange
+        {220, 180, 200}  // clean / taupe?!
+      };
+
+      std::array<std::array<uint8_t, 16>, 512> candidate_cache;
+      bool cache_built = false;
+      std::array<uint8_t, 16> candidates;
+    
+      uint color;
+      IDirectDisplayDriver<uint8_t> &driver;
+
+      PicoGraphics_PenInky7(uint16_t width, uint16_t height, IDirectDisplayDriver<uint8_t> &direct_display_driver);
+      void set_pen(uint c) override;
+      void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      int create_pen_hsv(float h, float s, float v) override;
+      void set_pixel(const Point &p) override;
+      void set_pixel_span(const Point &p, uint l) override;
+
+      int get_palette_size() override {return palette_size;};
+      RGB* get_palette() override {return palette;};
+
+      void get_dither_candidates(const RGB &col, const RGB *palette, size_t len, std::array<uint8_t, 16> &candidates);
+      void set_pixel_dither(const Point &p, const RGB &c) override;
+
+      void frame_convert(PenType type, conversion_callback_func callback) override;
+      static size_t buffer_size(uint w, uint h) {
+        return w * h;
+      }
+  };
 }

@@ -154,13 +154,14 @@ namespace pimoroni {
         uint8_t *p = &bitstream[row * ROW_BYTES + (BCD_FRAME_BYTES * frame)];
 
         p[ 0] = WIDTH - 1;               // row pixel count
-        p[56] = row;                     // row select
+        p[ 1] = row;                     // row select
 
         // set the number of bcd ticks for this frame
         uint32_t bcd_ticks = (1 << frame);
-        p[57] = (bcd_ticks &     0xff) >>  0;
-        p[58] = (bcd_ticks &   0xff00) >>  8;
-        p[59] = (bcd_ticks & 0xff0000) >> 16;
+        p[56] = (bcd_ticks &       0xff) >>  0;
+        p[57] = (bcd_ticks &     0xff00) >>  8;
+        p[58] = (bcd_ticks &   0xff0000) >> 16;
+        p[59] = (bcd_ticks & 0xff000000) >> 24;
       }
     }
 
@@ -485,7 +486,7 @@ namespace pimoroni {
 
     // set the appropriate bits in the separate bcd frames
     for(uint8_t frame = 0; frame < BCD_FRAME_COUNT; frame++) {
-      uint8_t *p = &bitstream[y * ROW_BYTES + (BCD_FRAME_BYTES * frame) + 1 + x];
+      uint8_t *p = &bitstream[y * ROW_BYTES + (BCD_FRAME_BYTES * frame) + 2 + x];
 
       uint8_t red_bit = gamma_r & 0b1;
       uint8_t green_bit = gamma_g & 0b1;
@@ -517,6 +518,7 @@ namespace pimoroni {
     value = value < 0.0f ? 0.0f : value;
     value = value > 1.0f ? 1.0f : value;
     this->volume = floor(value * 255.0f);
+    this->synth.volume = this->volume * 255.0f;
   }
 
   float GalacticUnicorn::get_volume() {
@@ -558,6 +560,40 @@ namespace pimoroni {
 
           set_pixel(x, y, r, g, b);
         }
+      }
+      else if(graphics->pen_type == PicoGraphics::PEN_RGB332) {
+        uint8_t *p = (uint8_t *)graphics->frame_buffer;
+        for(size_t j = 0; j < 53 * 11; j++) {
+          int x = j % 53;
+          int y = j / 53;
+
+          uint8_t col = *p;
+          uint8_t r = (col & 0b11100000);
+          uint8_t g = (col & 0b00011100) << 3;
+          uint8_t b = (col & 0b00000011) << 6;
+          p++;
+
+          set_pixel(x, y, r, g, b);
+        }
+      }
+      else if(graphics->pen_type == PicoGraphics::PEN_P8 || graphics->pen_type == PicoGraphics::PEN_P4) {
+        int offset = 0;
+        graphics->frame_convert(PicoGraphics::PEN_RGB888, [this, offset](void *data, size_t length) mutable {
+          uint32_t *p = (uint32_t *)data;
+          for(auto i = 0u; i < length / 4; i++) {
+            int x = offset % 53;
+            int y = offset / 53;
+
+            uint32_t col = *p;
+            uint8_t r = (col & 0xff0000) >> 16;
+            uint8_t g = (col & 0x00ff00) >>  8;
+            uint8_t b = (col & 0x0000ff) >>  0;
+
+            set_pixel(x, y, r, g, b);
+            offset++;
+            p++;
+          }
+        });
       }
     }
   }

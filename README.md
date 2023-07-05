@@ -109,6 +109,7 @@ We also maintain a C++/CMake boilerplate with GitHub workflows configured for te
 * Inky Frame 4.0" (7-colour E Ink) - https://shop.pimoroni.com/products/inky-frame-4
 * Badger 2040 W (E Ink badge) - https://shop.pimoroni.com/products/badger-2040-w
 * Cosmic Unicorn (32 x 32 LED matrix) - https://shop.pimoroni.com/products/cosmic-unicorn
+* Inky Frame 7.3" (7-colour E Ink) - https://shop.pimoroni.com/products/inky-frame-7-3
 
 ## Breakouts
 
@@ -117,6 +118,7 @@ We also maintain a C++/CMake boilerplate with GitHub workflows configured for te
 * MICS6814 - Gas Sensor - https://shop.pimoroni.com/products/mics6814-gas-sensor-breakout
 * RGB Potentiometer - https://shop.pimoroni.com/products/rgb-potentiometer-breakout
 * RGB Encoder - https://shop.pimoroni.com/products/rgb-encoder-breakout
+* RGB Encoder Wheel - https://shop.pimoroni.com/products/rgb-encoder-wheel-breakout
 * IO Expander - https://shop.pimoroni.com/products/io-expander
 * RV3028 - Real-Time Clock (RTC) - https://shop.pimoroni.com/products/rv3028-real-time-clock-rtc-breakout
 * ST7735 - 0.96" LCD - https://shop.pimoroni.com/products/0-96-spi-colour-lcd-160x80-breakout
@@ -140,6 +142,7 @@ We also maintain a C++/CMake boilerplate with GitHub workflows configured for te
 * ICP10125 - High Accuracy Pressure / Altitude / Temperature Sensor - https://shop.pimoroni.com/products/icp10125-air-pressure-breakout
 * SCD41 CO2 Sensor (Carbon Dioxide / Temperature / Humidity) - https://shop.pimoroni.com/products/scd41-co2-sensor-breakout
 * VL53L5CX 8x8 Time of Flight Array Sensor - https://shop.pimoroni.com/products/vl53l5cx-time-of-flight-tof-sensor-breakout
+* RGB Encoder Wheel - https://shop.pimoroni.com/products/rgb-encoder-wheel-breakout
 
 ## Kits
 

@@ -4,6 +4,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../")
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
 # Essential
 include(pimoroni_i2c/micropython)
 include(pimoroni_bus/micropython)
@@ -37,3 +40,6 @@ include(micropython-common-ulab)
 enable_ulab()
 
 include(modules_py/modules_py)
+
+# C++ Magic Memory
+include(cppmem/micropython)

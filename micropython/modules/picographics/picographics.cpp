@@ -23,10 +23,10 @@ extern "C" {
 #include "py/reader.h"
 #include "extmod/vfs.h"
 
-std::string mp_obj_to_string_r(const mp_obj_t &obj) {
+const std::string_view mp_obj_to_string_r(const mp_obj_t &obj) {
     if(mp_obj_is_str_or_bytes(obj)) {
         GET_STR_DATA_LEN(obj, str, str_len);
-        return (const char*)str;
+        return std::string_view((const char*)str, str_len);
     }
     mp_raise_TypeError("can't convert object to str implicitly");
 }
@@ -37,6 +37,7 @@ typedef struct _ModPicoGraphics_obj_t {
     DisplayDriver *display;
     void *spritedata;
     void *buffer;
+    void *fontdata;
     _PimoroniI2C_obj_t *i2c;
     //mp_obj_t scanline_callback; // Not really feasible in MicroPython
 } ModPicoGraphics_obj_t;
@@ -210,6 +211,28 @@ bool get_display_settings(PicoGraphicsDisplay display, int &width, int &height, 
             if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
             if(pen_type == -1) pen_type = PEN_RGB888;
             break;
+        case DISPLAY_STELLAR_UNICORN:
+            width = 16;
+            height = 16;
+            bus_type = BUS_PIO;
+            // Portrait to match labelling
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_UNICORN_PACK:
+            width = 16;
+            height = 7;
+            bus_type = BUS_PIO;
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
+        case DISPLAY_SCROLL_PACK:
+            width = 17;
+            height = 7;
+            bus_type = BUS_PIO;
+            if(rotate == -1) rotate = (int)Rotation::ROTATE_0;
+            if(pen_type == -1) pen_type = PEN_RGB888;
+            break;
         default:
             return false;
     }
@@ -331,17 +354,19 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
 
     } else if (display == DISPLAY_INKY_PACK) {
         self->display = m_new_class(UC8151, width, height, (Rotation)rotate, spi_bus);
-
-    } else if (display == DISPLAY_GALACTIC_UNICORN) {
-        self->display = m_new_class(DisplayDriver, width, height, (Rotation)rotate);
     
     } else if (display == DISPLAY_GFX_PACK) {
         self->display = m_new_class(ST7567, width, height, spi_bus);
 
-    } else if (display == DISPLAY_INTERSTATE75_32X32 || display == DISPLAY_INTERSTATE75_64X64 || display == DISPLAY_INTERSTATE75_64X32) {
-        self->display = m_new_class(DisplayDriver, width, height, (Rotation)rotate);
-    
-    } else if (display == DISPLAY_COSMIC_UNICORN) {
+    } else if (display == DISPLAY_INTERSTATE75_32X32
+            || display == DISPLAY_INTERSTATE75_64X64
+            || display == DISPLAY_INTERSTATE75_64X32
+            || display == DISPLAY_GALACTIC_UNICORN
+            || display == DISPLAY_COSMIC_UNICORN
+            || display == DISPLAY_STELLAR_UNICORN
+            || display == DISPLAY_UNICORN_PACK
+            || display == DISPLAY_SCROLL_PACK) {
+        // Create a dummy display driver
         self->display = m_new_class(DisplayDriver, width, height, (Rotation)rotate);
 
     } else {
@@ -496,7 +521,16 @@ mp_obj_t ModPicoGraphics_sprite(size_t n_args, const mp_obj_t *args) {
 
 mp_obj_t ModPicoGraphics_set_font(mp_obj_t self_in, mp_obj_t font) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
-    self->graphics->set_font(mp_obj_to_string_r(font));
+
+    if (mp_obj_is_str(font)) {
+        self->graphics->set_font(mp_obj_to_string_r(font));
+    }
+    else {
+        mp_buffer_info_t bufinfo;
+        mp_get_buffer_raise(font, &bufinfo, MP_BUFFER_READ);
+        self->fontdata = bufinfo.buf;
+        self->graphics->set_font(((bitmap::font_t *)self->fontdata));
+    }
     return mp_const_none;
 }
 
@@ -912,7 +946,7 @@ mp_obj_t ModPicoGraphics_character(size_t n_args, const mp_obj_t *pos_args, mp_m
 }
 
 mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_text, ARG_x, ARG_y, ARG_wrap, ARG_scale, ARG_angle, ARG_spacing };
+    enum { ARG_self, ARG_text, ARG_x, ARG_y, ARG_wrap, ARG_scale, ARG_angle, ARG_spacing, ARG_fixed_width };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -922,6 +956,7 @@ mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
         { MP_QSTR_scale, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_angle, MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_spacing, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_fixed_width, MP_ARG_OBJ, {.u_obj = mp_const_false} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -935,7 +970,7 @@ mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
 
     GET_STR_DATA_LEN(text_obj, str, str_len);
 
-    std::string t((const char*)str);
+    const std::string_view t((const char*)str, str_len);
 
     int x = args[ARG_x].u_int;
     int y = args[ARG_y].u_int;
@@ -943,19 +978,21 @@ mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
     float scale = args[ARG_scale].u_obj == mp_const_none ? 2.0f : mp_obj_get_float(args[ARG_scale].u_obj);
     int angle = args[ARG_angle].u_int;
     int letter_spacing = args[ARG_spacing].u_int;
+    bool fixed_width = args[ARG_fixed_width].u_obj == mp_const_true;
 
-    self->graphics->text(t, Point(x, y), wrap, scale, angle, letter_spacing);
+    self->graphics->text(t, Point(x, y), wrap, scale, angle, letter_spacing, fixed_width);
 
     return mp_const_none;
 }
 
 mp_obj_t ModPicoGraphics_measure_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_text, ARG_scale, ARG_spacing };
+    enum { ARG_self, ARG_text, ARG_scale, ARG_spacing, ARG_fixed_width };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_scale, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_spacing, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_fixed_width, MP_ARG_OBJ, {.u_obj = mp_const_false} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -969,12 +1006,13 @@ mp_obj_t ModPicoGraphics_measure_text(size_t n_args, const mp_obj_t *pos_args, m
 
     GET_STR_DATA_LEN(text_obj, str, str_len);
 
-    std::string t((const char*)str);
+    const std::string_view t((const char*)str, str_len);
 
     float scale = args[ARG_scale].u_obj == mp_const_none ? 2.0f : mp_obj_get_float(args[ARG_scale].u_obj);
     int letter_spacing = args[ARG_spacing].u_int;
+    bool fixed_width = args[ARG_fixed_width].u_obj == mp_const_true;
 
-    int width = self->graphics->measure_text(t, scale, letter_spacing);
+    int width = self->graphics->measure_text(t, scale, letter_spacing, fixed_width);
 
     return mp_obj_new_int(width);
 }

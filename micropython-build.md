@@ -25,16 +25,30 @@ cd ..
 
 ## build custom micropython for the target
 
+The micropython code seems to push compilers to the limit. Works with gcc 12.2 (see https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) with no modifications to micropython itself and a slight modifications to pimoroni-pico.
+
+Ensure the right compiler is being used, e.g.
+
+```sh
+export PATH=/opt/arm-gnu-toolchain-12.2.mpacbti-rel1-x86_64-arm-none-eabi/bin:$PATH
+```
+
 `USER_C_MODULES` points to the custom modules in pimoroni-pico. Code below uses `PICO` (the standard pico 2040 board), other options are (replace as necessary):
-- `PIMORONI_TINY2040`
-- `PIMORONI_PICOLIPO_4MB`
-- `PIMORONI_PICOLIPO_16MB`
+- `PICO_W`
+- `PICO_ENVIRO` (might require a patch to pico-sdk?)
+- ...
+
+Then e.g.
 
 ```sh
 cd ports/rp2/
-cmake -S . -B build-PICO -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=../../../pimoroni-pico/micropython/modules/micropython-pico.cmake -DMICROPY_BOARD=PICO -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake -S . -B build-PICO -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=../../../pimoroni-pico/micropython/modules/micropython-pico.cmake  -DMICROPY_BOARD_DIR=../../../pimoroni-pico/micropython/board/PICO -DMICROPY_BOARD=PICO
 cmake --build build-PICO -j
 ```
-(`ccache` can be installed from e.g. apt)
+
+
+### pico enviro
+
+needs patch..?
 
 *Et voila!* image is at `ports/rp2/build-PICO/firmware.uf2`.

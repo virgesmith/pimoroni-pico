@@ -1,5 +1,11 @@
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../)
 
+# link_directories(/mnt/data/dev/rpi-pico/pimoroni-pico/micropython/modules/bsec/lib)
+#find_library(ALGOBSEC_LIB
+#    NAMES algobsec
+#    PATHS /mnt/data/dev/rpi-pico/pimoroni-pico/micropython/modules/bsec/lib
+#)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../")
@@ -27,6 +33,7 @@ include(pcf85063a/micropython)
 # Utility
 include(adcfft/micropython)
 include(wakeup/micropython)
+include(bsec/micropython)
 
 # Configure wakeup for Enviro
 target_compile_definitions(usermod_wakeup INTERFACE

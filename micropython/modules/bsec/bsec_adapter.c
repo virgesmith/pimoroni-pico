@@ -5,13 +5,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /***** Methods *****/
-MP_DEFINE_CONST_FUN_OBJ_KW(BSEC_read_obj, 1, BSEC_read);
+MP_DEFINE_CONST_FUN_OBJ_KW(BSEC_status_obj, 1, BSEC_status);
 MP_DEFINE_CONST_FUN_OBJ_KW(BSEC_configure_obj, 1, BSEC_configure);
+MP_DEFINE_CONST_FUN_OBJ_KW(BSEC_read_obj, 1, BSEC_read);
 
 /***** Binding of Methods *****/
 STATIC const mp_rom_map_elem_t BSEC_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&BSEC_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_status), MP_ROM_PTR(&BSEC_status_obj) },
     { MP_ROM_QSTR(MP_QSTR_configure), MP_ROM_PTR(&BSEC_configure_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&BSEC_read_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(BSEC_locals_dict, BSEC_locals_dict_table);
 

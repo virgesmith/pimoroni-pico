@@ -26,7 +26,7 @@ public:
 	bme68x_conf conf;
 	bme68x_heatr_conf heatrConf;
 
-	BSEC(pimoroni::I2C* i2c, uint8_t address);
+	BSEC(pimoroni::I2C* i2c, uint8_t address, float temp_offset = 0.0);
 
   std::string version();
 
@@ -86,34 +86,12 @@ public:
 	 */
 	void setConfig(const uint8_t *config);
 
-	/**
-	 * @brief Function to calculate an int64_t timestamp in milliseconds
-	 */
-	int64_t getTimeMs();
-
-	/**
-	* @brief Task that delays for a ms period of time
-	* @param period	: Period of time in us
-	* @param intfPtr: Pointer to the interface descriptor
-	*/
-	static void delay_us(uint32_t period, void *intfPtr);
-
-	// /**
-  //    * @brief Function to set the Temperature, Pressure and Humidity over-sampling.
-  //    *        Passing no arguments sets the defaults.
-  //    * @param osTemp : BME68X_OS_NONE to BME68X_OS_16X
-  //    * @param osPres : BME68X_OS_NONE to BME68X_OS_16X
-  //    * @param osHum  : BME68X_OS_NONE to BME68X_OS_16X
-  //    */
-	// void setTPH(uint8_t osTemp = BME68X_OS_2X, uint8_t osPres = BME68X_OS_16X, uint8_t osHum = BME68X_OS_1X);
-
 private:
   bsec_library_return_t m_bsec_status;
   int8_t m_bme68x_status;
   pimoroni::BME68X m_bme68x;
-
 	bme68x_data m_data;
-	uint8_t nFields;
+	float m_temp_offset;
 
 	/**
 	 * @brief Read data from the BME68x and process it

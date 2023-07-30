@@ -28,28 +28,31 @@ mp_obj_t BSEC_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, co
   {
     ARG_i2c,
     ARG_address,
-    ARG_int
+    ARG_temp_offset
   };
   static const mp_arg_t allowed_args[] = {
       {MP_QSTR_i2c, MP_ARG_OBJ, {.u_obj = nullptr}},
       {MP_QSTR_address, MP_ARG_INT, {.u_int = BME68X::DEFAULT_I2C_ADDRESS}},
-      //{ MP_QSTR_interrupt, MP_ARG_INT, {.u_int = PIN_UNUSED} },
+      {MP_QSTR_temp_offset, MP_ARG_OBJ, {.u_obj = mp_obj_new_float(0.0)} },
   };
+
 
   // Parse args.
   mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
   mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+  float temp_offset = mp_obj_get_float(args[ARG_temp_offset].u_obj);
 
   self = m_new_obj(bsec_BSEC_obj_t);
   self->base.type = &bsec_BSEC_type;
 
   self->i2c = PimoroniI2C_from_machine_i2c_or_native(args[ARG_i2c].u_obj);
 
-  self->object = m_new_class(BSEC, (pimoroni::I2C *)(self->i2c->i2c), args[ARG_address].u_int);
+  self->object = m_new_class(BSEC, (pimoroni::I2C *)(self->i2c->i2c), args[ARG_address].u_int, temp_offset);
 
   self->object->setConfig(bsec_config);
 
-  // TODO check
+  // TODO check...what?
 
   sleep_ms(1000);
 
@@ -94,10 +97,10 @@ mp_obj_t BSEC_status(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 
   bsec_BSEC_obj_t* self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, bsec_BSEC_obj_t);
 
-  mp_obj_t tuple[2];
-  tuple[0] = mp_obj_new_int(self->object->bsec_status());
-  tuple[1] = mp_obj_new_int(self->object->bme68x_status());
-  return mp_obj_new_tuple(2, tuple);
+  mp_obj_t dict = mp_obj_new_dict(14);
+  mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_bsec), mp_obj_new_int(self->object->bsec_status()));
+  mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_bme68x), mp_obj_new_int(self->object->bme68x_status()));
+  return dict;
 }
 
 
@@ -117,22 +120,22 @@ mp_obj_t BSEC_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 
   for(;;) {
     if (self->object->run()) {
-      mp_obj_t tuple[14];
-      tuple[0] = mp_obj_new_float(self->object->rawTemperature);
-      tuple[1] = mp_obj_new_float(self->object->pressure);
-      tuple[2] = mp_obj_new_float(self->object->rawHumidity);
-      tuple[3] = mp_obj_new_float(self->object->gasResistance);
-      tuple[4] = mp_obj_new_int(self->object->stabStatus);
-      tuple[5] = mp_obj_new_int(self->object->runInStatus);
-      tuple[6] = mp_obj_new_float(self->object->iaq);
-      tuple[7] = mp_obj_new_int(self->object->iaqAccuracy);
-      tuple[8] = mp_obj_new_float(self->object->staticIaq);
-      tuple[9] = mp_obj_new_float(self->object->co2Equivalent);
-      tuple[10] = mp_obj_new_float(self->object->breathVocEquivalent);
-      tuple[11] = mp_obj_new_float(self->object->temperature);
-      tuple[12] = mp_obj_new_float(self->object->humidity);
-      tuple[13] = mp_obj_new_float(self->object->gasPercentage);
-      return mp_obj_new_tuple(16, tuple);
+      mp_obj_t dict = mp_obj_new_dict(14);
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_raw_temperature), mp_obj_new_float(self->object->rawTemperature));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_pressure), mp_obj_new_float(self->object->pressure)); // Pa
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_raw_humidity), mp_obj_new_float(self->object->rawHumidity));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_gas_resistance), mp_obj_new_float(self->object->gasResistance)); // ohms
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_stabilisation_status), mp_obj_new_bool(self->object->stabStatus));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_runin_status), mp_obj_new_bool(self->object->runInStatus));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_iaq), mp_obj_new_float(self->object->iaq));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_iaq_accuracy), mp_obj_new_int(self->object->iaqAccuracy));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_static_iaq), mp_obj_new_float(self->object->staticIaq));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_co2), mp_obj_new_float(self->object->co2Equivalent)); // ppm
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_bvoc), mp_obj_new_float(self->object->breathVocEquivalent)); // ppm
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_temperature), mp_obj_new_float(self->object->temperature));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_humidity), mp_obj_new_float(self->object->humidity));
+      mp_obj_dict_store(MP_OBJ_FROM_PTR(dict), MP_OBJ_NEW_QSTR(MP_QSTR_gas_percentage), mp_obj_new_float(self->object->gasPercentage));
+      return dict;
     }
     sleep_ms(3000);
   }

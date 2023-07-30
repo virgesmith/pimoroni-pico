@@ -1,8 +1,8 @@
 #include "bsec.h"
 
 
-BSEC::BSEC(pimoroni::I2C* i2c, uint8_t address) : m_bme68x(i2c, address) {
-
+BSEC::BSEC(pimoroni::I2C* i2c, uint8_t address, float temp_offset) : m_bme68x(i2c, address), m_temp_offset(temp_offset)
+{
 	zeroInputs();
   zeroOutputs();
 
@@ -44,7 +44,7 @@ bool BSEC::run()
 {
 	bool newData = false;
 	/* Check if the time has arrived to call do_steps() */
-	int64_t callTimeMs = getTimeMs();
+	int64_t callTimeMs = to_ms_since_boot(get_absolute_time());
 
 	if (callTimeMs >= nextCall) {
 
@@ -106,8 +106,7 @@ void BSEC::setConfig(const uint8_t *state)
 bool BSEC::readProcessData(int64_t currTimeNs, bsec_bme_settings_t bme68xSettings)
 {
 	bsec_input_t inputs[BSEC_MAX_PHYSICAL_SENSOR]; // Temperature, Pressure, Humidity & Gas Resistance
-	uint8_t nInputs = 0, nOutputs = 0;
-	nFields = 0;
+	uint8_t nInputs = 0, nOutputs = 0, nFields = 0;
 
 	if (bme68xSettings.process_data)
 	{
@@ -125,28 +124,26 @@ bool BSEC::readProcessData(int64_t currTimeNs, bsec_bme_settings_t bme68xSetting
 				inputs[nInputs].signal = m_data.temperature;
 
 				inputs[nInputs].time_stamp = currTimeNs;
-				nInputs++;
+				++nInputs;
 				/* Temperature offset from the real temperature due to external heat sources */
 				inputs[nInputs].sensor_id = BSEC_INPUT_HEATSOURCE;
-				inputs[nInputs].signal = 0.0; //_tempOffset;
+				inputs[nInputs].signal = m_temp_offset;
 				inputs[nInputs].time_stamp = currTimeNs;
-				nInputs++;
+				++nInputs;
 			}
 			if (bme68xSettings.process_data & BSEC_PROCESS_HUMIDITY)
 			{
 				inputs[nInputs].sensor_id = BSEC_INPUT_HUMIDITY;
-
 				inputs[nInputs].signal = m_data.humidity;
-
 				inputs[nInputs].time_stamp = currTimeNs;
-				nInputs++;
+				++nInputs;
 			}
 			if (bme68xSettings.process_data & BSEC_PROCESS_PRESSURE)
 			{
 				inputs[nInputs].sensor_id = BSEC_INPUT_PRESSURE;
 				inputs[nInputs].signal = m_data.pressure;
 				inputs[nInputs].time_stamp = currTimeNs;
-				nInputs++;
+				++nInputs;
 			}
 			if (bme68xSettings.process_data & BSEC_PROCESS_GAS)
 			{
@@ -156,13 +153,13 @@ bool BSEC::readProcessData(int64_t currTimeNs, bsec_bme_settings_t bme68xSetting
 					inputs[nInputs].sensor_id = BSEC_INPUT_GASRESISTOR;
 					inputs[nInputs].signal = m_data.gas_resistance;
 					inputs[nInputs].time_stamp = currTimeNs;
-					nInputs++;
+					++nInputs;
 				}
 			}
 		}
 	}
 
-	if (nInputs > 0)
+	if (nInputs)
 	{
 		nOutputs = BSEC_NUMBER_OUTPUTS;
 		bsec_output_t _outputs[BSEC_NUMBER_OUTPUTS];
@@ -280,7 +277,7 @@ int8_t BSEC::setBme68xConfig(bsec_bme_settings_t bme68xSettings)
 		}
 		meas_period = bme68x_get_meas_dur(BME68X_FORCED_MODE, &conf, &m_bme68x.device) + heatrConf.heatr_dur*1000;
 		/* Delay till the measurement is ready. Timestamp resolution in ms */
-        delay_us((uint32_t)meas_period, m_bme68x.device.intf_ptr);
+    sleep_us((uint32_t)meas_period);
 	}
 
 	/* Call the API to get current operation mode of the sensor */
@@ -291,7 +288,7 @@ int8_t BSEC::setBme68xConfig(bsec_bme_settings_t bme68xSettings)
     while (current_op_mode == BME68X_FORCED_MODE)
     {
         /* sleep for 5 ms */
-        delay_us(5 * 1000, m_bme68x.device.intf_ptr);
+        sleep_us(5 * 1000);
         bme68xSts = bme68x_get_op_mode(&current_op_mode, &m_bme68x.device);
     }
 	return bme68xSts;
@@ -330,131 +327,9 @@ void BSEC::zeroOutputs(void)
 void BSEC::zeroInputs(void)
 {
     nextCall = 0;
-    // version.major = 0;
-    // version.minor = 0;
-    // version.major_bugfix = 0;
-    // version.minor_bugfix = 0;
     m_bme68x_status = BME68X_OK;
     outputTimestamp = 0;
    	m_bsec_status = BSEC_OK;
 
 }
-/**
- * @brief Function to calculate an int64_t timestamp in milliseconds
- */
-int64_t BSEC::getTimeMs(void)
-{
-	return to_ms_since_boot(get_absolute_time());
-	// int64_t timeMs = millis();
 
-	// if (lastTime > timeMs) { // An overflow occurred
-	// 	millisOverflowCounter++;
-	// }
-
-	// lastTime = timeMs;
-
-	// return timeMs + ((int64_t)millisOverflowCounter << 32);
-}
-
-/**
- @brief Task that delays for a us period of time
- */
-void BSEC::delay_us(uint32_t period, void *)
-{
-	// Wait for a period amount of ms
-	// The system may simply idle, sleep or even perform background tasks
-	sleep_us(period);
-}
-
-// /**
-//  @brief Callback function for reading registers over I2C
-//  */
-// int8_t BSEC::i2cRead(uint8_t regAddr, uint8_t *regData, uint32_t length, void *intf_ptr)
-// {
-// 	intptr_t devId = (intptr_t)intf_ptr;
-// 	int8_t rslt = 0;
-// 	// see https://github.com/pimoroni/pimoroni-pico/blob/main/drivers/bme68x/bme68x.cpp...
-
-// 	if(BSEC::wireObj) {
-// 		BSEC::wireObj->beginTransmission(devId);
-// 		BSEC::wireObj->write(regAddr);
-// 		rslt = BSEC::wireObj->endTransmission();
-// 		BSEC::wireObj->requestFrom((int) devId, (int) length);
-// 		for (auto i = 0; (i < length) && BSEC::wireObj->available(); i++) {
-// 			regData[i] = BSEC::wireObj->read();
-// 		}
-// 	} else {
-// 		rslt = -1;
-// 	}
-// 	return rslt;
-// }
-
-// /**
-//  * @brief Callback function for writing registers over I2C
-//  */
-// int8_t BSEC::i2cWrite(uint8_t regAddr, const uint8_t *regData, uint32_t length, void *intf_ptr)
-// {
-// 	intptr_t devId = (intptr_t)intf_ptr;
-// 	int8_t rslt = 0;
-// 	if(BSEC::wireObj) {
-// 		BSEC::wireObj->beginTransmission(devId);
-// 		BSEC::wireObj->write(regAddr);
-// 		for (auto i = 0; i < length; i++) {
-// 			BSEC::wireObj->write(regData[i]);
-// 		}
-// 		rslt = BSEC::wireObj->endTransmission();
-// 	} else {
-// 		rslt = -1;
-// 	}
-// 	return rslt;
-// }
-
-// /**
-//  * @brief Callback function for reading over SPI
-//  */
-// int8_t BSEC::spiRead(uint8_t regAddr, uint8_t *regData, uint32_t length, void *intf_ptr)
-// {
-// 	intptr_t devId = (intptr_t)intf_ptr;
-// 	int8_t rslt = 0;
-// 	if(BSEC::spiObj) {
-// 		BSEC::spiObj->beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0)); // Can be up to 10MHz
-
-// 		digitalWrite(devId, LOW);
-
-// 		BSEC::spiObj->transfer(regAddr); // Write the register address, ignore the return
-// 		for (auto i = 0; i < length; i++)
-// 			regData[i] = BSEC::spiObj->transfer(regData[i]);
-
-// 		digitalWrite(devId, HIGH);
-// 		BSEC::spiObj->endTransaction();
-// 	} else {
-// 		rslt = -1;
-// 	}
-
-// 	return rslt;
-// }
-
-/**
- * @brief Callback function for writing registers over SPI
- */
-// int8_t BSEC::spiWrite(uint8_t regAddr, const uint8_t *regData, uint32_t length, void *intf_ptr)
-// {
-// 	intptr_t devId = (intptr_t)intf_ptr;
-// 	int8_t rslt = 0;
-// 	if(BSEC::spiObj) {
-// 		BSEC::spiObj->beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0)); // Can be up to 10MHz
-
-// 		digitalWrite(devId, LOW);
-
-// 		BSEC::spiObj->transfer(regAddr); // Write the register address, ignore the return
-// 		for (auto i = 0; i < length; i++)
-// 			BSEC::spiObj->transfer(regData[i]);
-
-// 		digitalWrite(devId, HIGH);
-// 		BSEC::spiObj->endTransaction();
-// 	} else {
-// 		rslt = -1;
-// 	}
-
-// 	return rslt;
-// }

@@ -15,3 +15,6 @@ extern mp_obj_t BSEC_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_
 extern mp_obj_t BSEC_get_state(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t BSEC_set_state(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 
+// module
+extern mp_obj_t bsec_version();
+

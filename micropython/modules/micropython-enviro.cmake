@@ -1,11 +1,5 @@
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../)
 
-# link_directories(/mnt/data/dev/rpi-pico/pimoroni-pico/micropython/modules/bsec/lib)
-#find_library(ALGOBSEC_LIB
-#    NAMES algobsec
-#    PATHS /mnt/data/dev/rpi-pico/pimoroni-pico/micropython/modules/bsec/lib
-#)
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../")

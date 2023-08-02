@@ -1,5 +1,6 @@
 #include "bsec.h"
 #include "micropython/modules/util.hpp"
+#include <cstring>
 
 extern "C"
 {
@@ -11,6 +12,23 @@ extern "C"
 #include "bsec_config.inl"
 
 using namespace pimoroni;
+using namespace bsec;
+
+// const mp_obj_t bsec_version = []() {
+// }();
+
+  // const std::string& v = self->object->version();
+  // self->version = mp_obj_new_str(v.c_str(), v.size());
+mp_obj_t bsec_version() {
+	static char buf[16] = {0};
+  if (!buf[0]) {
+    bsec_version_t bsec_version;
+    bsec_get_version(&bsec_version);
+    snprintf(buf, sizeof(buf), "%d.%d.%d.%d", bsec_version.major, bsec_version.minor, bsec_version.major_bugfix, bsec_version.minor_bugfix);
+  }
+	return mp_obj_new_str(buf, 7);
+}
+
 
 typedef struct _bsec_BSEC_obj_t
 {
@@ -81,6 +99,12 @@ mp_obj_t BSEC_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, co
 
   return MP_OBJ_FROM_PTR(self);
 }
+
+
+// mp_obj_t BSEC_version(mp_obj_t self_in) {
+//     bsec_BSEC_obj_t* self = MP_OBJ_TO_PTR2(self_in, bsec_BSEC_obj_t); //MP_OBJ_TO_PTR(self_in);
+//     return self->version;
+// }
 
 
 mp_obj_t BSEC_status(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)

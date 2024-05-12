@@ -6,8 +6,10 @@
 #include "hardware/clocks.h"
 
 
+#ifndef NO_QSTR
 #include "galactic_unicorn.pio.h"
 #include "audio_i2s.pio.h"
+#endif
 
 #include "galactic_unicorn.hpp"
 
@@ -486,11 +488,14 @@ namespace pimoroni {
   void GalacticUnicorn::set_brightness(float value) {
     value = value < 0.0f ? 0.0f : value;
     value = value > 1.0f ? 1.0f : value;
+    // Max brightness is - in fact - 256 since it's applied with:
+    // result = (channel * brightness) >> 8
+    // eg: (255 * 256) >> 8 == 255
     this->brightness = floor(value * 256.0f);
   }
 
   float GalacticUnicorn::get_brightness() {
-    return this->brightness / 255.0f;
+    return this->brightness / 256.0f;
   }
 
   void GalacticUnicorn::adjust_brightness(float delta) {

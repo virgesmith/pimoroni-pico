@@ -5,7 +5,10 @@
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 #include "libraries/pico_graphics/pico_graphics.hpp"
+
+#ifndef NO_QSTR
 #include "hub75.pio.h"
+#endif
 
 namespace pimoroni {
 const uint DATA_BASE_PIN = 0;
@@ -70,7 +73,7 @@ class Hub75 {
     Pixel background = 0;
 
     // DMA & PIO
-    uint dma_channel = 0;
+    int dma_channel = -1;
     uint bit = 0;
     uint row = 0;
 
